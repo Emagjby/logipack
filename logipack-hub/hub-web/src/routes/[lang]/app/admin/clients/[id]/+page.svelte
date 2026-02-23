@@ -2,7 +2,6 @@
 	import type { ActionData, PageData } from "./$types";
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
-	import { formatDateTime } from "$lib/domain/strataPackage";
 
 	let {
 		data,
@@ -13,7 +12,7 @@
 	} = $props();
 
 	let lang = $derived(page.params.lang || "en");
-	let officeId = $derived(page.params.id || "");
+	let clientId = $derived(page.params.id || "");
 	let copiedId = $state(false);
 	let submitError = $derived(form?.submitError ?? null);
 
@@ -30,7 +29,7 @@
 	}
 
 	function confirmDelete(event: SubmitEvent): void {
-		if (!confirm($_("admin.offices.detail.delete_confirm"))) {
+		if (!confirm($_("admin.clients.detail.delete_confirm"))) {
 			event.preventDefault();
 		}
 	}
@@ -56,18 +55,18 @@
 			</svg>
 		</div>
 		<h2 class="mt-4 text-lg font-semibold text-surface-50">
-			{$_("admin.offices.detail.error.headline")}
+			{$_("admin.clients.detail.error.headline")}
 		</h2>
 		{#if data.result.message}
 			<p class="mt-2 font-mono text-xs text-surface-600">
-				{data.result.message}
+				{$_(data.result.message)}
 			</p>
 		{/if}
 		<a
-			href={`/${lang}/app/admin/offices/${officeId}`}
+			href={`/${lang}/app/admin/clients/${clientId}`}
 			class="mt-5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover"
 		>
-			{$_("admin.offices.detail.retry")}
+			{$_("admin.clients.detail.retry")}
 		</a>
 	</div>
 {:else if data.result.state === "not_found"}
@@ -90,50 +89,48 @@
 			</svg>
 		</div>
 		<h2 class="mt-4 text-lg font-semibold text-surface-50">
-			{$_("admin.offices.detail.not_found")}
+			{$_("admin.clients.detail.not_found")}
 		</h2>
 		<p class="mt-1 max-w-sm text-sm text-surface-400">
-			{$_("admin.offices.detail.not_found_hint")}
+			{$_("admin.clients.detail.not_found_hint")}
 		</p>
 		<a
-			href={`/${lang}/app/admin/offices`}
+			href={`/${lang}/app/admin/clients`}
 			class="mt-5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover"
 		>
-			{$_("admin.offices.detail.back_to_list")}
+			{$_("admin.clients.detail.back_to_list")}
 		</a>
 	</div>
 {:else}
-	{@const office = data.result.office}
+	{@const client = data.result.client}
 
 	<section
 		class="stagger stagger-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
 	>
 		<div>
 			<h1 class="text-2xl font-bold text-surface-50">
-				{$_("admin.offices.detail.headline", { values: { name: office.name } })}
+				{$_("admin.clients.detail.headline", {
+					values: { name: client.name },
+				})}
 			</h1>
 			<p class="mt-1 text-sm text-surface-400">
-				{$_("admin.offices.detail.last_updated", {
-					values: {
-						time: office.updated_at
-							? formatDateTime(office.updated_at, lang)
-							: $_("common.none"),
-					},
+				{$_("admin.clients.detail.subheadline", {
+					values: { id: client.id },
 				})}
 			</p>
 		</div>
 		<div class="flex flex-wrap items-start gap-2">
 			<a
-				href={`/${lang}/app/admin/offices`}
+				href={`/${lang}/app/admin/clients`}
 				class="rounded-lg bg-surface-800 px-3 py-2 text-sm font-medium text-surface-400 transition-colors hover:bg-surface-700 hover:text-surface-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
 			>
-				{$_("admin.offices.detail.back_to_list")}
+				{$_("admin.clients.detail.back_to_list")}
 			</a>
 			<a
-				href={`/${lang}/app/admin/offices/${office.id}/edit`}
+				href={`/${lang}/app/admin/clients/${client.id}/edit`}
 				class="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
 			>
-				{$_("admin.offices.detail.edit")}
+				{$_("admin.clients.detail.edit")}
 			</a>
 			<div class="flex flex-col items-start gap-1 sm:items-end">
 				<form method="POST" action="?/delete" onsubmit={confirmDelete}>
@@ -141,7 +138,7 @@
 						type="submit"
 						class="inline-flex cursor-pointer items-center justify-center rounded-lg bg-red-500 px-3 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-red-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-400/60"
 					>
-						{$_("admin.offices.detail.delete")}
+						{$_("admin.clients.detail.delete")}
 					</button>
 				</form>
 			</div>
@@ -165,19 +162,19 @@
 				<dt
 					class="text-[11px] font-medium uppercase tracking-wider text-surface-600"
 				>
-					{$_("admin.offices.col.id")}
+					{$_("admin.clients.col.id")}
 				</dt>
 				<dd class="mt-1 flex items-center gap-2 text-sm">
-					<span class="font-mono text-accent">{office.id}</span>
+					<span class="font-mono text-accent">{client.id}</span>
 					<button
 						type="button"
-						onclick={() => copyId(office.id)}
+						onclick={() => copyId(client.id)}
 						class="cursor-pointer rounded-md bg-surface-800 px-1.5 py-1 text-[0.62rem] font-medium text-accent transition-colors hover:bg-surface-700"
-						title={$_("admin.offices.copy_id")}
-						aria-label={$_("admin.offices.copy_id")}
+						title={$_("admin.clients.copy_id")}
+						aria-label={$_("admin.clients.copy_id")}
 					>
 						{#if copiedId}
-							{$_("admin.offices.copied")}
+							{$_("admin.clients.copied")}
 						{:else}
 							<svg
 								class="h-3.5 w-3.5 text-accent"
@@ -206,10 +203,10 @@
 				<dt
 					class="text-[11px] font-medium uppercase tracking-wider text-surface-600"
 				>
-					{$_("admin.offices.col.name")}
+					{$_("admin.clients.col.name")}
 				</dt>
 				<dd class="mt-1 text-sm text-surface-200">
-					{office.name}
+					{client.name}
 				</dd>
 			</div>
 
@@ -217,10 +214,14 @@
 				<dt
 					class="text-[11px] font-medium uppercase tracking-wider text-surface-600"
 				>
-					{$_("admin.offices.col.city")}
+					{$_("admin.clients.col.email")}
 				</dt>
 				<dd class="mt-1 text-sm text-surface-200">
-					{office.city}
+					{#if client.email}
+						{client.email}
+					{:else}
+						<span class="text-surface-600">—</span>
+					{/if}
 				</dd>
 			</div>
 
@@ -228,10 +229,14 @@
 				<dt
 					class="text-[11px] font-medium uppercase tracking-wider text-surface-600"
 				>
-					{$_("admin.offices.col.address")}
+					{$_("admin.clients.col.phone")}
 				</dt>
 				<dd class="mt-1 text-sm text-surface-200">
-					{office.address}
+					{#if client.phone}
+						{client.phone}
+					{:else}
+						<span class="text-surface-600">—</span>
+					{/if}
 				</dd>
 			</div>
 		</dl>

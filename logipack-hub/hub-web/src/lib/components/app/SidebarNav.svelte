@@ -136,7 +136,6 @@
 			normalizedPathname.startsWith(`${targetPath}/`)
 		);
 	}
-
 </script>
 
 <aside
@@ -156,13 +155,14 @@
 		</div>
 	</div>
 
-	<!-- Divider -->
-	<div class="mx-4 h-px bg-surface-800"></div>
-
 	<!-- Navigation section -->
 	<nav class="flex-1 overflow-y-auto px-3 py-4">
 		{#each navSections as section, sectionIndex (section.labelKey)}
-			<div class={sectionIndex === navSections.length - 1 ? "mb-0" : "mb-5"}>
+			<div
+				class={sectionIndex === navSections.length - 1
+					? "mb-0"
+					: "mb-5"}
+			>
 				<span
 					class="mb-2 block px-3 text-[10px] font-medium uppercase tracking-widest text-surface-600"
 				>

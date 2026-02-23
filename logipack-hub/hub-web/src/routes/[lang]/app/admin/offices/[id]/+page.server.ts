@@ -1,5 +1,7 @@
-import { getMockOfficeById } from "$lib/server/mockOffices";
+import { deleteMockOffice, getMockOfficeById } from "$lib/server/mockOffices";
+import { fail, redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
+import type { Actions } from "./$types";
 
 type OfficeDetail = {
 	id: string;
@@ -46,4 +48,23 @@ export const load: PageServerLoad = async ({ params }) => {
 			},
 		};
 	}
+};
+
+export const actions: Actions = {
+	delete: async ({ params }) => {
+		try {
+			const deleted = deleteMockOffice(params.id);
+			if (!deleted) {
+				return fail(404, {
+					submitError: "admin.offices.detail.not_found",
+				});
+			}
+		} catch {
+			return fail(500, {
+				submitError: "admin.offices.detail.delete_failed",
+			});
+		}
+
+		throw redirect(303, `/${params.lang ?? "en"}/app/admin/offices`);
+	},
 };

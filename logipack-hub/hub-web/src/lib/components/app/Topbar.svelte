@@ -58,8 +58,13 @@
 		segments.length === 0 ? null : segments[segments.length - 1],
 	);
 	let normalizedPageTitleSegment = $derived.by(() => {
-		if (segments.length >= 2 && segments[segments.length - 1]?.toLowerCase() === "new") {
-			return segments[segments.length - 2]?.toLowerCase() ?? pageTitleSegment;
+		if (
+			segments.length >= 2 &&
+			segments[segments.length - 1]?.toLowerCase() === "new"
+		) {
+			return (
+				segments[segments.length - 2]?.toLowerCase() ?? pageTitleSegment
+			);
 		}
 		return pageTitleSegment;
 	});
@@ -182,14 +187,14 @@
 					isSearchFocused = false;
 				}}
 				oninput={(e) =>
-					updateTopbarSearch((e.currentTarget as HTMLInputElement).value)}
-				placeholder={
-					isAdminOfficesListPage
-						? $_("admin.offices.search_placeholder")
-						: isShipmentsListPage
+					updateTopbarSearch(
+						(e.currentTarget as HTMLInputElement).value,
+					)}
+				placeholder={isAdminOfficesListPage
+					? $_("admin.offices.search_placeholder")
+					: isShipmentsListPage
 						? $_("shipments.search_placeholder")
-						: $_("navbar.search_placeholder")
-				}
+						: $_("navbar.search_placeholder")}
 				disabled={!isSearchEnabled}
 				class="h-8 w-44 rounded-md border border-surface-700/50 bg-surface-800/50 pl-8 pr-3 text-xs text-surface-400 placeholder:text-surface-600 focus:outline-none disabled:cursor-not-allowed"
 			/>
