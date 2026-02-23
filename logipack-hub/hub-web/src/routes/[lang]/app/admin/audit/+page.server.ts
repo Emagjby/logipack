@@ -21,8 +21,8 @@ type AuditSeed = Omit<AuditEvent, "at"> & { minutesAgo: number };
 
 type AdminAuditResult =
 	| { state: "ok"; events: AuditEvent[] }
-	| { state: "empty"; events: [] }
-	| { state: "error"; events: [] };
+	| { state: "empty"; events: AuditEvent[] }
+	| { state: "error"; events: AuditEvent[] };
 
 const AUDIT_SEED: AuditSeed[] = [
 	{
@@ -132,7 +132,7 @@ export const load: PageServerLoad = async () => {
 		return {
 			result: {
 				state: "error" as const,
-				events: [] as [],
+				events: [],
 			},
 		};
 	}

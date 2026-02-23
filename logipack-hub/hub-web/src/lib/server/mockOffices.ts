@@ -44,6 +44,7 @@ const NAMESPACE_UUID = "d6ddf7c1-8ef6-4a47-bf8d-0fdb77d0a7f6";
 // They are cleared on process restarts/cold starts and are not durable storage.
 const createdOffices = new Map<string, MockOffice>();
 const updatedOffices = new Map<string, MockOffice>();
+const deletedOfficeIds = new Set<string>();
 
 function uuidToBytes(uuid: string): Uint8Array {
 	const normalized = uuid.replace(/-/g, "").toLowerCase();
@@ -116,10 +117,12 @@ function buildBaseOfficesMap(): Map<string, MockOffice> {
 				updated_at,
 			};
 		})) {
+		if (deletedOfficeIds.has(office.id)) continue;
 		officesById.set(office.id, office);
 	}
 
 	for (const office of createdOffices.values()) {
+		if (deletedOfficeIds.has(office.id)) continue;
 		officesById.set(office.id, office);
 	}
 
@@ -129,6 +132,7 @@ function buildBaseOfficesMap(): Map<string, MockOffice> {
 function getMockOfficesMap(): Map<string, MockOffice> {
 	const officesById = buildBaseOfficesMap();
 	for (const office of updatedOffices.values()) {
+		if (deletedOfficeIds.has(office.id)) continue;
 		officesById.set(office.id, office);
 	}
 	return officesById;
@@ -140,6 +144,7 @@ export function listMockOffices(): MockOffice[] {
 }
 
 export function getMockOfficeById(id: string): MockOffice | null {
+	if (deletedOfficeIds.has(id)) return null;
 	return getMockOfficesMap().get(id) ?? null;
 }
 
@@ -163,6 +168,7 @@ export function createMockOffice(input: CreateMockOfficeInput): { id: string } {
 		typeof crypto !== "undefined" && "randomUUID" in crypto
 			? crypto.randomUUID()
 			: `office_${Date.now()}`;
+	deletedOfficeIds.delete(id);
 
 	createdOffices.set(id, {
 		id,
@@ -197,4 +203,23 @@ export function updateMockOffice(
 
 	updatedOffices.set(id, updatedOffice);
 	return updatedOffice;
+}
+
+export function deleteMockOffice(id: string): boolean {
+	if (createdOffices.has(id)) {
+		createdOffices.delete(id);
+		return true;
+	}
+
+	if (updatedOffices.has(id)) {
+		updatedOffices.delete(id);
+		deletedOfficeIds.add(id);
+		return true;
+	}
+
+	const existsInSeed = buildBaseOfficesMap().has(id);
+	if (!existsInSeed) return false;
+
+	deletedOfficeIds.add(id);
+	return true;
 }
