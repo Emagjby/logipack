@@ -4,9 +4,7 @@ SHELL := /bin/bash
 
 help:
 	@echo "Targets:"
-	@echo "  test      - cargo test (serialized output with summary)"
-	@echo "  fmt       - cargo fmt --all"
-	@echo "  clippy    - cargo clippy --workspace --all-targets --all-features"
+	@echo "  test      - cargo test (serialized output with summary)" @echo "  fmt       - cargo fmt --all" @echo "  clippy    - cargo clippy --workspace --all-targets --all-features"
 	@echo "  dev-api   - run hub API"
 	@echo "  dev-web   - run SvelteKit dev server"
 	@echo "  build-web - build SvelteKit"
@@ -56,7 +54,7 @@ dev-api:
 	cd logipack-hub/hub-api && cargo run
 
 dev-web:
-	cd logipack-hub/hub-web && bun run dev
+	cd logipack-hub/hub-web && bun run dev --host
 
 build-web:
-	cd logipack-hub/hub-web && bun run build
+	cd logipack-hub/hub-web && bun run build 
