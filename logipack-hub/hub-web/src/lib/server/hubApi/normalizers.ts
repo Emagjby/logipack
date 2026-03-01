@@ -17,26 +17,100 @@ export class HubApiMappingError extends Error {
 	}
 }
 
-export function requireIsoDateTime(_args: {
+function isRecord(v: unknown): v is Record<string, unknown> {
+	return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+export function requireRecord(args: {
+	endpoint: string;
+	field: string;
+	value: unknown;
+}): Record<string, unknown> {
+	if (!isRecord(args.value)) {
+		throw new HubApiMappingError({
+			endpoint: args.endpoint,
+			field: args.field,
+			message: `expected object for ${args.field}`,
+		});
+	}
+	return args.value;
+}
+
+export function requireString(args: {
+	endpoint: string;
+	field: string;
+	value: unknown;
+	trim?: boolean;
+	nonEmpty?: boolean;
+}): string {
+	const { endpoint, field, value } = args;
+	if (typeof value !== "string") {
+		throw new HubApiMappingError({
+			endpoint,
+			field,
+			message: `expected string for ${field}`,
+		});
+	}
+
+	const s = args.trim === false ? value : value.trim();
+	if (args.nonEmpty && s.length === 0) {
+		throw new HubApiMappingError({
+			endpoint,
+			field,
+			message: `expected non-empty string for ${field}`,
+		});
+	}
+
+	return s;
+}
+
+export function cleanNullableString(args: {
+	endpoint: string;
+	field: string;
+	value: unknown;
+}): string | null {
+	const { endpoint, field, value } = args;
+	if (value === null || value === undefined) return null;
+	if (typeof value !== "string") {
+		throw new HubApiMappingError({
+			endpoint,
+			field,
+			message: `expected string or null for ${field}`,
+		});
+	}
+	const s = value.trim();
+	return s.length === 0 ? null : s;
+}
+
+export function requireIsoDateTime(args: {
 	endpoint: string;
 	field: string;
 	value: unknown;
 }): string {
-	throw new HubApiMappingError({
-		endpoint: _args.endpoint,
-		field: _args.field,
-		message: "requireIsoDateTime not implemented",
+	const s = requireString({
+		endpoint: args.endpoint,
+		field: args.field,
+		value: args.value,
+		trim: true,
+		nonEmpty: true,
 	});
-}
 
-export function cleanNullablestring(_v: unknown): string | null {
-	return null;
-}
+	if (!s.includes("T")) {
+		throw new HubApiMappingError({
+			endpoint: args.endpoint,
+			field: args.field,
+			message: `expected ISO datetime for ${args.field}`,
+		});
+	}
 
-export function normalizeShipmentStatusStrict(_args: {
-	endpoint: string;
-	field: string;
-	value: unknown;
-}): "unknown" | string {
-	return "unknown";
+	const ms = Date.parse(s);
+	if (!Number.isFinite(ms)) {
+		throw new HubApiMappingError({
+			endpoint: args.endpoint,
+			field: args.field,
+			message: `expected ISO datetime for ${args.field}`,
+		});
+	}
+
+	return s;
 }

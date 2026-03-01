@@ -1,4 +1,5 @@
 <script lang="ts">
+	/*
 	import { enhance } from "$app/forms";
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
@@ -45,8 +46,10 @@
 	function officeLabel(office: { name: string; city: string }): string {
 		return `${office.name} (${office.city})`;
 	}
+	*/
 </script>
 
+<!--
 {#if data.result.state === "error"}
 	<div class="stagger stagger-1 flex flex-col items-center py-20 text-center">
 		<div
@@ -152,7 +155,9 @@
 		class="stagger stagger-2 mt-6 rounded-xl border border-surface-700/50 bg-surface-900 p-4"
 	>
 		<div class="rounded-lg bg-surface-900/40 p-2.5">
-			<p class="text-[11px] font-medium uppercase tracking-wider text-surface-600">
+			<p
+				class="text-[11px] font-medium uppercase tracking-wider text-surface-600"
+			>
 				{$_("admin.employees.offices.current.headline")}
 			</p>
 			{#if currentOffice}
@@ -209,7 +214,10 @@
 				{/if}
 
 				<div class="space-y-1.5">
-					<label for="office_id" class="text-sm font-medium text-surface-200">
+					<label
+						for="office_id"
+						class="text-sm font-medium text-surface-200"
+					>
 						{$_("admin.employees.offices.form.office_id")}
 						<span class="text-red-400">*</span>
 					</label>
@@ -218,7 +226,9 @@
 						name="office_id"
 						type="text"
 						value={selectedOfficeId}
-						placeholder={$_("admin.employees.offices.form.office_placeholder")}
+						placeholder={$_(
+							"admin.employees.offices.form.office_placeholder",
+						)}
 						required
 						autocomplete="off"
 						disabled={submitting}
@@ -233,7 +243,10 @@
 								: "border-surface-700 focus-visible:ring-accent/50",
 						]}
 					/>
-					<p id="employee_office_hint" class="text-xs text-surface-400">
+					<p
+						id="employee_office_hint"
+						class="text-xs text-surface-400"
+					>
 						{$_("admin.employees.offices.form.office_hint")}
 					</p>
 					<p
@@ -264,3 +277,4 @@
 		</section>
 	{/if}
 {/if}
+-->

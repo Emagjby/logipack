@@ -39,9 +39,9 @@ async fn admin_can_create_office() {
     assert_eq!(res.status(), StatusCode::CREATED);
     let body = res.into_body().collect().await.unwrap().to_bytes();
     let body: CreateOfficeResponse = serde_json::from_slice(&body).unwrap();
-    let office_id = Uuid::parse_str(&body.office_id).unwrap();
+    let office: CreateOfficeResponse = body;
 
-    assert_ne!(office_id, Uuid::nil());
+    assert_ne!(office.office.id, String::new());
 }
 
 #[tokio::test]

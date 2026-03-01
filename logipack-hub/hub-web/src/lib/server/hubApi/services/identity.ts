@@ -1,9 +1,7 @@
-import type { createHubApiClient } from "../httpClient";
 import type { EnsureUserRequestDto, MeResponseDto } from "../dto/identity";
 import { mapMeRole, type LpRole } from "../mappers/identity";
 import { HubApiError } from "../errors";
-
-export type HubApiClient = ReturnType<typeof createHubApiClient>;
+import type { HubApiClient } from "../index";
 
 /**
  * POST /ensure-user
