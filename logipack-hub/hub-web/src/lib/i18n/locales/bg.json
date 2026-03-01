@@ -229,7 +229,7 @@
     "error.details.auth_management_token_failed": "Неуспешно получаване на management токен за Auth.",
     "error.details.auth_user_profile_read_failed": "Неуспешно прочитане на обновения потребителски профил.",
     "error.details.auth_user_role_load_failed": "Неуспешно зареждане на потребителската роля.",
-    "error.details.auth_missing_code": "Липсва параметър ?code.",
+    "error.details.auth_missing_code": "Липсва код за удостоверяване в URL.",
     "error.details.auth_exchange_failed": "Удостоверяването не бе успешно, моля опитайте отново.",
     "error.details.auth_provision_failed": "Неуспешно създаване на потребителски акаунт.",
     "error.details.auth_account_conflict": "Този акаунт вече е свързан с друг профил.",

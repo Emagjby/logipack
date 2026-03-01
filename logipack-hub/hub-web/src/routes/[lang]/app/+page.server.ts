@@ -1,17 +1,17 @@
 import type { PageServerLoad } from "./$types";
 import { redirect } from "@sveltejs/kit";
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { session } = await parent();
-	const role = session?.role;
+export const load: PageServerLoad = async ({ locals, params }) => {
+	const lang = params.lang;
 
-	if (role === "admin") {
-		throw redirect(302, "/app/admin");
+	const role = locals.session?.role ?? "";
+
+	switch (role) {
+		case "admin":
+			throw redirect(302, `/${lang}/app/admin`);
+		case "employee":
+			throw redirect(302, `/${lang}/app/employee`);
+		default:
+			throw redirect(302, `/${lang}/app/no-access`);
 	}
-
-	if (role === "employee") {
-		throw redirect(302, "/app/employee");
-	}
-
-	throw redirect(302, "/app/no-access");
 };

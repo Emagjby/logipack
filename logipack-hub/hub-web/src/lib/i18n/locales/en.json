@@ -230,7 +230,7 @@
     "error.details.auth_management_token_failed": "Auth management token failed.",
     "error.details.auth_user_profile_read_failed": "Failed to read updated user profile.",
     "error.details.auth_user_role_load_failed": "Failed to load user role.",
-    "error.details.auth_missing_code": "Missing ?code.",
+    "error.details.auth_missing_code": "Missing authorization code. Please try signing in again.",
     "error.details.auth_exchange_failed": "Authentication failed, please try again.",
     "error.details.auth_provision_failed": "Failed to provision user account.",
     "error.details.auth_account_conflict": "This account is already linked to a different profile.",

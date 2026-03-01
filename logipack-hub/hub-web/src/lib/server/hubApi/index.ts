@@ -28,3 +28,5 @@ export * from "./mappers/clients";
 export * from "./mappers/employees";
 export * from "./mappers/shipments";
 export * from "./mappers/identity";
+
+export * from "./services/identity";

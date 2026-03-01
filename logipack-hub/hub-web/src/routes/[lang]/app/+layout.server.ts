@@ -1,24 +1,23 @@
-import type { LayoutServerLoad } from "./$types";
-import type { Me, Role } from "$lib/types/console";
 import { redirect } from "@sveltejs/kit";
+import type { LayoutServerLoad } from "./$types";
 
-const VALID_ROLES: readonly Role[] = ["admin", "employee"];
+export const load: LayoutServerLoad = async ({ locals, params, url }) => {
+	const lang = params.lang;
 
-export const load: LayoutServerLoad = async ({ locals, url }) => {
-	if (!locals.session) {
-		throw redirect(302, `/?redirect=${url.pathname}${url.search}`);
+	const session = locals.session;
+	if (!session) {
+		throw redirect(303, `/${lang}/login`);
 	}
 
-	const session = (locals.session ?? null) as Me | null;
+	const role = session.role ?? "";
+	const isNoAccess = url.pathname === `/${lang}/app/no-access`;
 
-	const hasValidRole = session?.role && VALID_ROLES.includes(session.role);
-	const isNoAccessRoute = /\/app\/no-access(\/|$)/.test(url.pathname);
-	const isAdminRoute = /\/app\/admin(\/|$)/.test(url.pathname);
+	if (isNoAccess) {
+		return { session, pathname: url.pathname };
+	}
 
-	// Admin routes are guarded by `app/admin/+layout.server.ts`, so skip
-	// the generic no-access redirect for them.
-	if (!hasValidRole && !isNoAccessRoute && !isAdminRoute) {
-		throw redirect(302, `/${url.pathname.split("/")[1] ?? "en"}/app/no-access`);
+	if (role !== "admin" && role !== "employee") {
+		throw redirect(303, `/${lang}/app/no-access`);
 	}
 
 	return {

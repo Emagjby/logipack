@@ -5,16 +5,17 @@ export type LpSession = {
 	name: string;
 	email: string;
 
-	refresh_token: string;
+	refresh_token?: string;
 	id_token?: string;
 
 	[key: string]: unknown;
 };
 
 function isObject(v: unknown): v is Record<string, unknown> {
-	return !!v && typeof v === "object";
+	return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+// TODO: refactor later
 function fail(field: string, expected: string, received: unknown): null {
 	console.error(`[parseSession] invalid ${field} (expected ${expected})`, {
 		received,
@@ -22,7 +23,16 @@ function fail(field: string, expected: string, received: unknown): null {
 	return null;
 }
 
+function nonEmptyStringOrUndefined(v: unknown): string | undefined {
+	if (typeof v !== "string") return undefined;
+	const s = v.trim();
+
+	if (s.length === 0) return undefined;
+	return s;
+}
+
 export function parseSession(payload: unknown): LpSession | null {
+	// TODO: refactor later
 	if (!isObject(payload)) {
 		console.error("[parseSession] invalid payload (expected object)", {
 			received: payload,
@@ -31,20 +41,17 @@ export function parseSession(payload: unknown): LpSession | null {
 	}
 
 	const access_token = payload.access_token;
-	// TODO
-	// const refresh_token = payload.refresh_token;
 	const expires_at = payload.expires_at;
+
 	const role = payload.role;
 	const name = payload.name;
 	const email = payload.email;
-	const id_token = payload.id_token;
+
+	const id_token = nonEmptyStringOrUndefined(payload.id_token);
+	const refresh_token = nonEmptyStringOrUndefined(payload.refresh_token);
 
 	if (typeof access_token !== "string" || !access_token)
 		return fail("access_token", "non-empty string", access_token);
-
-	// TODO
-	// if (typeof refresh_token !== "string" || !refresh_token)
-	// 	return fail("refresh_token", "non-empty string", refresh_token);
 
 	if (typeof expires_at !== "number" || !Number.isFinite(expires_at))
 		return fail("expires_at", "finite number", expires_at);
@@ -55,17 +62,13 @@ export function parseSession(payload: unknown): LpSession | null {
 
 	if (typeof email !== "string") return fail("email", "string", email);
 
-	if (id_token !== undefined && typeof id_token !== "string")
-		return fail("id_token", "string | undefined", id_token);
-
 	return {
 		access_token,
 		expires_at,
 		role,
 		name,
 		email,
-		// TODO: FIX THIS POST MVP
-		refresh_token: "",
-		id_token,
+		...(id_token ? { id_token } : {}),
+		...(refresh_token ? { refresh_token } : {}),
 	};
 }
