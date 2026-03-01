@@ -8,6 +8,11 @@ import {
 	SESSION_SECRET,
 	HUB_API_BASE,
 } from "$env/static/private";
+
+import { createHubApiClient } from "$lib/server/hubApi/httpClient";
+import { HubApiError } from "$lib/server/hubApi/errors";
+import { ensureUser, getMe } from "$lib/server/hubApi/services/identity";
+
 import { EncryptJWT } from "jose";
 
 function safeRedirectPath(raw: string, fallback = "/app"): string {
@@ -113,35 +118,14 @@ async function getUserFromMgmt(
 	};
 }
 
-async function getMeRole(
-	accessToken: string,
-	signal: AbortSignal,
-): Promise<string> {
-	const res = await fetch(`${HUB_API_BASE}/me`, {
-		headers: { Authorization: `Bearer ${accessToken}` },
-		signal,
-	});
-
-	if (res.status === 404) {
-		return "";
-	}
-
-	if (!res.ok) {
-		const body = await res.text();
-		console.error("/me failed:", res.status, body);
-		throw error(502, AUTH_ERROR_DETAILS.userRoleLoadFailed);
-	}
-
-	const json = (await res.json()) as { role: string };
-	return json.role ?? "";
-}
-
 export const GET: RequestHandler = async ({ url, cookies, locals }) => {
-	const state = url.searchParams.get("state") ?? "/app";
 	const cookieLang = cookies.get("lang");
 	const lang =
 		locals.lang ??
 		(cookieLang && SUPPORTED_LANGS.has(cookieLang) ? cookieLang : "en");
+
+	const rawState = url.searchParams.get("state");
+	const state = rawState === "/app" || !rawState ? `/${lang}/app` : rawState;
 
 	try {
 		const code = url.searchParams.get("code");
@@ -174,6 +158,13 @@ export const GET: RequestHandler = async ({ url, cookies, locals }) => {
 			token_type: string;
 		};
 
+		const hub = createHubApiClient({
+			fetch,
+			locals: { session: { access_token: tokens.access_token } } as any,
+			baseUrl: HUB_API_BASE,
+			timeoutMs: 10_000,
+		});
+
 		let name = "";
 		let email = "";
 		let sub = "";
@@ -187,7 +178,9 @@ export const GET: RequestHandler = async ({ url, cookies, locals }) => {
 
 		const looksBad =
 			!name ||
-			(!!name && !!email && name.trim().toLowerCase() === email.trim().toLowerCase());
+			(!!name &&
+				!!email &&
+				name.trim().toLowerCase() === email.trim().toLowerCase());
 
 		if (looksBad && sub) {
 			const mgmtToken = await getMgmtToken(AbortSignal.timeout(10000));
@@ -214,37 +207,30 @@ export const GET: RequestHandler = async ({ url, cookies, locals }) => {
 		}
 
 		try {
-			const ensureRes = await fetch(`${HUB_API_BASE}/ensure-user`, {
-				method: "POST",
-				headers: {
-					"content-type": "application/json",
-					Authorization: `Bearer ${tokens.access_token}`,
-				},
-				signal: AbortSignal.timeout(10000),
-				body: JSON.stringify({ name, email }),
-			});
-
-			if (!ensureRes.ok) {
-				const bodyText = await ensureRes.text();
-				console.error("ensure-user failed:", ensureRes.status, bodyText);
-
-				if (ensureRes.status === 409) {
+			await ensureUser(hub, { name, email }, 10_000);
+		} catch (e: unknown) {
+			if (e instanceof HubApiError) {
+				if (e.status === 409) {
 					throw error(409, AUTH_ERROR_DETAILS.accountConflict);
 				}
-
-				if (ensureRes.status === 400) {
+				if (e.status === 400) {
 					throw error(400, AUTH_ERROR_DETAILS.invalidProfile);
 				}
-
 				throw error(502, AUTH_ERROR_DETAILS.provisionFailed);
 			}
-		} catch (e: unknown) {
+
 			if (isRedirect(e) || isHttpError(e)) throw e;
-			console.error("ensure-user call failed:", e);
+			console.error("ensure-user call failed: ", e);
 			throw error(502, AUTH_ERROR_DETAILS.provisionFailed);
 		}
 
-		const role = await getMeRole(tokens.access_token, AbortSignal.timeout(5000));
+		let role = "";
+		try {
+			role = await getMe(hub, 5_000);
+		} catch (e: unknown) {
+			console.error("/me failed: ", e);
+			throw error(502, AUTH_ERROR_DETAILS.userRoleLoadFailed);
+		}
 
 		const expiresAt =
 			Math.floor(Date.now() / 1000) + (tokens.expires_in ?? 3600);

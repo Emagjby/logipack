@@ -1,7 +1,11 @@
-import type { MeDto } from "../dto/identity";
+import type { MeResponseDto } from "../dto/identity";
 
-export type Me = Record<string, never>;
+export type LpRole = "admin" | "employee" | "";
 
-export function mapMeDtoToMe(_dto: MeDto): Me {
-	return {};
+export function mapMeRole(dto: MeResponseDto): LpRole {
+	const role = dto.role.trim();
+	if (role === "admin" || role === "employee") {
+		return role;
+	}
+	return "";
 }

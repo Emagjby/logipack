@@ -52,6 +52,7 @@ function isAuthRoute(pathname: string) {
 	return pathname === "/callback" || pathname === "/logout";
 }
 
+// TODO
 async function refreshAccessToken(refreshToken: string) {
 	const res = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
 		method: "POST",
@@ -159,13 +160,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 			const now = Math.floor(Date.now() / 1000);
 			const expiresAt = Number(session.expires_at ?? 0);
 
+			const rt = session.refresh_token;
+
 			const shouldRefresh =
-				typeof session.refresh_token === "string" &&
+				typeof rt === "string" &&
+				rt.trim().length > 0 &&
 				expiresAt > 0 &&
 				expiresAt - now < 30;
 
 			if (shouldRefresh) {
-				const refreshed = await refreshAccessToken(session.refresh_token ?? "");
+				const refreshed = await refreshAccessToken(rt);
 				if (refreshed?.access_token) {
 					const newExpiresAt = now + (refreshed.expires_in ?? 3600);
 

@@ -97,6 +97,14 @@ export function createHubApiClient(args: CreateHubApiClientArgs) {
 				throw await hubApiErrorFromResponse({ response: res, upstream });
 			}
 
+			if (res.status === 204) {
+				return {
+					ok: true,
+					status: res.status,
+					data: undefined as unknown as T,
+				};
+			}
+
 			const data = await parseJsonOrThrowHubApiError<T>({
 				response: res,
 				upstream,

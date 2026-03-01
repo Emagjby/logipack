@@ -11,10 +11,6 @@ function f(key: string, vars?: Record<string, any>): string {
 export const load: PageServerLoad = async ({ parent }) => {
 	const { session } = await parent();
 
-	if (session?.role === "admin") {
-		throw error(403, "error.details.employee_only");
-	}
-
 	const now = new Date();
 	const office = resolveEmployeeOffice(session);
 	const canCreateShipment = Boolean(office.id);

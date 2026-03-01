@@ -1,3 +1,8 @@
-import type { UnknownDto } from "./common";
+export type EnsureUserRequestDto = {
+	email: string;
+	name: string;
+};
 
-export type MeDto = UnknownDto;
+export type MeResponseDto = {
+	role: string;
+};
