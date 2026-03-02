@@ -49,6 +49,7 @@ async fn list_offices_handler(
             name: office.name,
             city: office.city,
             address: office.address,
+            updated_at: office.updated_at.to_rfc3339(),
         })
         .collect();
 
@@ -91,6 +92,7 @@ async fn get_office_handler(
             name: office.name,
             city: office.city,
             address: office.address,
+            updated_at: office.updated_at.to_rfc3339(),
         },
     };
 
@@ -125,8 +127,30 @@ async fn create_office_handler(
             }
         })?;
 
+    let out = core_application::offices::get::get_office(&state.db, &actor, office_id)
+        .await
+        .map_err(|e| match e {
+            core_application::offices::get::GetOfficeError::NotFound => {
+                ApiError::not_found("office_not_found", "Office not found")
+            }
+            core_application::offices::get::GetOfficeError::Forbidden => {
+                ApiError::forbidden("access_denied", "Access denied")
+            }
+            core_application::offices::get::GetOfficeError::OfficeError(err) => {
+                ApiError::internal(err.to_string())
+            }
+        })?;
+
+    let office = out.ok_or_else(|| ApiError::internal("created_office_missing"))?;
+
     let result = CreateOfficeResponse {
-        office_id: office_id.to_string(),
+        office: OfficeDto {
+            id: office.id.to_string(),
+            name: office.name,
+            city: office.city,
+            address: office.address,
+            updated_at: office.updated_at.to_rfc3339(),
+        },
     };
 
     Ok((axum::http::StatusCode::CREATED, Json(result)))
@@ -153,7 +177,7 @@ async fn update_office_handler(
         address: request.address,
     };
 
-    let out = core_application::offices::update::update_office(&state.db, &actor, input)
+    let updated_id = core_application::offices::update::update_office(&state.db, &actor, input)
         .await
         .map_err(|e| match e {
             core_application::offices::update::UpdateOfficeError::NotFound => {
@@ -170,8 +194,30 @@ async fn update_office_handler(
             }
         })?;
 
+    let out = core_application::offices::get::get_office(&state.db, &actor, updated_id)
+        .await
+        .map_err(|e| match e {
+            core_application::offices::get::GetOfficeError::NotFound => {
+                ApiError::not_found("office_not_found", "Office not found")
+            }
+            core_application::offices::get::GetOfficeError::Forbidden => {
+                ApiError::forbidden("access_denied", "Access denied")
+            }
+            core_application::offices::get::GetOfficeError::OfficeError(err) => {
+                ApiError::internal(err.to_string())
+            }
+        })?;
+
+    let office = out.ok_or_else(|| ApiError::internal("updated_office_missing"))?;
+
     let result = UpdateOfficeResponse {
-        office_id: out.to_string(),
+        office: OfficeDto {
+            id: office.id.to_string(),
+            name: office.name,
+            city: office.city,
+            address: office.address,
+            updated_at: office.updated_at.to_rfc3339(),
+        },
     };
 
     Ok(Json(result))

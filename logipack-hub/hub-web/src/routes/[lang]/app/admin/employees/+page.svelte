@@ -1,10 +1,14 @@
 <script lang="ts">
+	/*
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
 	import type { PageData } from "./$types";
 
-	type EmployeeListRow = Extract<PageData["result"], { state: "ok" }>["employees"][number];
+	type EmployeeListRow = Extract<
+		PageData["result"],
+		{ state: "ok" }
+	>["employees"][number];
 
 	let { data }: { data: PageData } = $props();
 
@@ -39,8 +43,10 @@
 		if (employee.office_name) return employee.office_name;
 		return null;
 	}
+	*/
 </script>
 
+<!--
 {#if data.result.state === "error"}
 	<div class="stagger stagger-1 flex flex-col items-center py-20 text-center">
 		<div
@@ -96,7 +102,9 @@
 				<span
 					class="rounded-full border border-surface-700/50 bg-surface-900 px-2.5 py-1 text-xs font-medium text-surface-400"
 				>
-					{$_("admin.employees.scope", { values: { count: employees.length } })}
+					{$_("admin.employees.scope", {
+						values: { count: employees.length },
+					})}
 				</span>
 			</div>
 		</div>
@@ -195,7 +203,8 @@
 									{employee.email}
 								</td>
 								<td class="px-5 py-3 text-sm text-surface-200">
-									{officeLabel(employee) ?? $_("admin.employees.office.none")}
+									{officeLabel(employee) ??
+										$_("admin.employees.office.none")}
 								</td>
 								<td class="px-5 py-3">
 									<svg
@@ -220,3 +229,4 @@
 		</div>
 	{/if}
 {/if}
+-->

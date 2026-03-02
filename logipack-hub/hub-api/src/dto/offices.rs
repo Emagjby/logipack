@@ -6,6 +6,8 @@ pub struct OfficeDto {
     pub name: String,
     pub city: String,
     pub address: String,
+
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,7 +19,7 @@ pub struct CreateOfficeRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateOfficeResponse {
-    pub office_id: String,
+    pub office: OfficeDto,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,5 +41,5 @@ pub struct UpdateOfficeRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateOfficeResponse {
-    pub office_id: String,
+    pub office: OfficeDto,
 }

@@ -18,7 +18,9 @@ export function parseOfficeFormData(formData: FormData): OfficeFormValues {
 	};
 }
 
-export function validateOfficeForm(values: OfficeFormValues): OfficeFieldErrors {
+export function validateOfficeForm(
+	values: OfficeFormValues,
+): OfficeFieldErrors {
 	const fieldErrors: OfficeFieldErrors = {};
 
 	if (!values.name) {

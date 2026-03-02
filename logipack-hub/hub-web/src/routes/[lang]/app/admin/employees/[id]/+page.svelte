@@ -1,4 +1,5 @@
 <script lang="ts">
+	/*
 	import type { ActionData, PageData } from "./$types";
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
@@ -45,8 +46,10 @@
 			event.preventDefault();
 		}
 	}
+	*/
 </script>
 
+<!--
 {#if data.result.state === "error"}
 	<div class="stagger stagger-1 flex flex-col items-center py-20 text-center">
 		<div
@@ -123,7 +126,9 @@
 	>
 		<div>
 			<h1 class="text-2xl font-bold text-surface-50">
-				{$_("admin.employees.detail.headline", { values: { name: user.name } })}
+				{$_("admin.employees.detail.headline", {
+					values: { name: user.name },
+				})}
 			</h1>
 			<p class="mt-1 text-sm text-surface-400">
 				{$_("admin.employees.detail.subheadline", {
@@ -201,7 +206,8 @@
 					{$_("admin.employees.detail.user_id")}
 				</dt>
 				<dd class="mt-1 text-sm text-surface-200">
-					<span class="font-mono text-accent">{employee.user_id}</span>
+					<span class="font-mono text-accent">{employee.user_id}</span
+					>
 				</dd>
 			</div>
 
@@ -255,7 +261,9 @@
 				{#if office}
 					<dd class="mt-1 text-sm text-surface-200">
 						{office.name} ({office.city})
-						<p class="mt-1 text-xs text-surface-400">{office.address}</p>
+						<p class="mt-1 text-xs text-surface-400">
+							{office.address}
+						</p>
 					</dd>
 				{:else}
 					<dd class="mt-1 text-sm text-surface-200">
@@ -270,5 +278,5 @@
 			</div>
 		</dl>
 	</div>
-
 {/if}
+-->

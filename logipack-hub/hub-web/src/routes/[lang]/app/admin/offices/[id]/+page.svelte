@@ -110,7 +110,9 @@
 	>
 		<div>
 			<h1 class="text-2xl font-bold text-surface-50">
-				{$_("admin.offices.detail.headline", { values: { name: office.name } })}
+				{$_("admin.offices.detail.headline", {
+					values: { name: office.name },
+				})}
 			</h1>
 			<p class="mt-1 text-sm text-surface-400">
 				{$_("admin.offices.detail.last_updated", {

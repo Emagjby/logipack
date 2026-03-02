@@ -1,3 +1,5 @@
+import type { createHubApiClient } from "./httpClient";
+
 export type {
   HttpMethod,
   HubApiRequestOptions,
@@ -14,6 +16,8 @@ export {
 } from "./errors";
 
 export { createHubApiClient } from "./httpClient";
+export type HubApiClient = ReturnType<typeof createHubApiClient>;
+
 export * from "./normalizers";
 
 export * from "./dto/common";
@@ -30,3 +34,4 @@ export * from "./mappers/shipments";
 export * from "./mappers/identity";
 
 export * from "./services/identity";
+export * from "./services/offices";

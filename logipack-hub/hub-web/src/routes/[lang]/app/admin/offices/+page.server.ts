@@ -1,22 +1,53 @@
-import type { PageServerLoad } from "./$types";
+import { HUB_API_BASE } from "$env/static/private";
 import {
-	filterMockOfficesByQuery,
-	listMockOffices,
-} from "$lib/server/mockOffices";
+	createHubApiClient,
+	HubApiError,
+	listOffices,
+} from "$lib/server/hubApi";
+import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ url }) => {
-	const q = url.searchParams.get("q")?.trim() ?? "";
+function filterByQuery<
+	T extends { name: string; city: string; address: string },
+>(offices: T[], query: string): T[] {
+	const needle = query.trim().toLowerCase();
+	if (!needle) return offices;
+
+	return offices.filter((o) =>
+		`${o.name} ${o.city} ${o.address}`.toLowerCase().includes(needle),
+	);
+}
+
+export const load: PageServerLoad = async ({ url, fetch, locals }) => {
+	const query = url.searchParams.get("q") || "";
 
 	try {
+		const client = createHubApiClient({
+			fetch,
+			locals,
+			baseUrl: HUB_API_BASE,
+		});
+
+		const offices = await listOffices(client);
 		return {
-			offices: filterMockOfficesByQuery(listMockOffices(), q),
-			q,
+			offices: filterByQuery(offices, query),
+			query,
 			loadError: false,
 		};
-	} catch {
+	} catch (e) {
+		if (e instanceof HubApiError) {
+			console.error("admin.offices.list failed", {
+				status: e.status,
+				message: e.message,
+				code: e.code,
+				upstream: e.upstream,
+			});
+		} else {
+			console.error("admin.offices.list failed", e);
+		}
+
 		return {
 			offices: [],
-			q,
+			query,
 			loadError: true,
 		};
 	}
