@@ -1,71 +1,82 @@
-import { deleteMockClient, getMockClientById } from "$lib/server/mockClients";
-import { fail, redirect } from "@sveltejs/kit";
-import type { Actions, PageServerLoad } from "./$types";
-
-type ClientDetail = {
-	id: string;
-	name: string;
-	email: string | null;
-	phone: string | null;
-	updated_at: string;
-};
+import { HUB_API_BASE } from "$env/static/private";
+import { createHubApiClient, HubApiError } from "$lib/server/hubApi";
+import { getClient } from "$lib/server/hubApi/services/clients";
+import { fail, isRedirect, redirect, type Actions } from "@sveltejs/kit";
+import type { PageServerLoad } from "./$types";
 
 type DetailResult =
-	| { state: "ok"; client: ClientDetail }
-	| { state: "not_found" }
-	| { state: "error"; message: string };
-
-function fetchClientDetail(id: string): DetailResult {
-	// TODO(api): replace mock with hub-api GET /admin/clients/:id
-	const client = getMockClientById(id);
-	if (!client) {
-		return { state: "not_found" };
+	| {
+		state: "ok";
+		client: Awaited<ReturnType<typeof getClient>>;
 	}
-
-	return {
-		state: "ok",
-		client: {
-			id: client.id,
-			name: client.name,
-			email: client.email,
-			phone: client.phone,
-			updated_at: client.updated_at,
-		},
+	| {
+		state: "not_found";
+	}
+	| {
+		state: "error";
+		message: string;
 	};
-}
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, fetch, locals }) => {
 	try {
-		return { result: fetchClientDetail(params.id) };
-	} catch (error) {
-		console.error("admin.clients.detail.load_failed", {
-			clientId: params.id,
-			error,
+		const client = createHubApiClient({
+			fetch,
+			locals,
+			baseUrl: HUB_API_BASE,
 		});
+		const detail = await getClient(client, params.id);
+
+		return { result: { state: "ok", client: detail } satisfies DetailResult };
+	} catch (e) {
+		if (e instanceof HubApiError && e.status === 404) {
+			return { result: { state: "not_found" } satisfies DetailResult };
+		}
+
+		if (e instanceof HubApiError) {
+			console.error("admin.clients.detail failed", {
+				clientId: params.id,
+				status: e.status,
+				code: e.code,
+				message: e.message,
+				upstream: e.upstream,
+			});
+		} else {
+			console.error("admin.clients.detail failed", {
+				clientId: params.id,
+				error: e,
+			});
+		}
+
 		return {
 			result: {
-				state: "error" as const,
+				state: "error",
 				message: "admin.clients.detail.load_failed",
-			},
+			} satisfies DetailResult,
 		};
 	}
 };
 
 export const actions: Actions = {
-	delete: async ({ params }) => {
+	delete: async ({ params, fetch, locals }) => {
 		try {
-			const deleted = deleteMockClient(params.id);
-			if (!deleted) {
-				return fail(404, {
-					submitError: "admin.clients.detail.not_found",
-				});
-			}
-		} catch {
-			return fail(500, {
-				submitError: "admin.clients.detail.delete_failed",
+			const client = createHubApiClient({
+				fetch,
+				locals,
+				baseUrl: HUB_API_BASE,
 			});
-		}
+			await client.delete(`/admin/clients/${params.id}`);
 
-		throw redirect(303, `/${params.lang ?? "en"}/app/admin/clients`);
+			throw redirect(303, `/${params.lang ?? "en"}/admin/clients`);
+		} catch (e) {
+			if (isRedirect(e)) {
+				throw e;
+			}
+
+			if (e instanceof HubApiError && e.status === 404) {
+				return fail(404, { submitError: "admin.clients.detail.not_found " });
+			}
+
+			return fail(500, { submitError: "admin.clients.detail.delete_failed" });
+		}
 	},
 };

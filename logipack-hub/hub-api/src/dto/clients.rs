@@ -6,6 +6,8 @@ pub struct ClientDto {
     pub name: String,
     pub email: Option<String>,
     pub phone: Option<String>,
+
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,7 +19,7 @@ pub struct CreateClientRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateClientResponse {
-    pub client_id: String,
+    pub client: ClientDto,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,5 +41,5 @@ pub struct UpdateClientRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateClientResponse {
-    pub client_id: String,
+    pub client: ClientDto,
 }

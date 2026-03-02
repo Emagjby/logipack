@@ -3,7 +3,7 @@ use core_domain::shipment::ShipmentStatus;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::dto::clients::ClientDto;
+use crate::dto::{clients::ClientDto, offices::OfficeDto};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ShipmentListItem {
@@ -23,14 +23,6 @@ pub struct ShipmentDetail {
     pub current_office: Option<OfficeDto>,
     pub created_at: String,
     pub updated_at: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct OfficeDto {
-    pub id: String,
-    pub name: String,
-    pub city: String,
-    pub address: String,
 }
 
 #[derive(Deserialize)]
@@ -92,6 +84,7 @@ impl From<core_data::entity::shipments::Model> for ShipmentDetail {
                 name: "".to_string(),
                 email: None,
                 phone: None,
+                updated_at: value.updated_at.to_rfc3339(),
             },
             current_status: value.current_status,
             current_office: None,

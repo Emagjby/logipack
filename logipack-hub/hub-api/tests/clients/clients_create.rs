@@ -39,9 +39,9 @@ async fn admin_can_create_client() {
     assert_eq!(res.status(), StatusCode::CREATED);
     let body = res.into_body().collect().await.unwrap().to_bytes();
     let body: CreateClientResponse = serde_json::from_slice(&body).unwrap();
-    let client_id = Uuid::parse_str(&body.client_id).unwrap();
+    let client = body.client;
 
-    assert_ne!(client_id, Uuid::nil());
+    assert_eq!(client.name, "John Doe");
 }
 
 #[tokio::test]

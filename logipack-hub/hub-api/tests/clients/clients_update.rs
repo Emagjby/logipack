@@ -42,8 +42,9 @@ async fn admin_can_update_client() {
 
     let body = res.into_body().collect().await.unwrap().to_bytes();
     let body: UpdateClientResponse = serde_json::from_slice(&body).unwrap();
+    let client = body.client;
 
-    assert_eq!(body.client_id, client_id.to_string());
+    assert_eq!(client.name, "Updated Client");
 }
 
 #[tokio::test]

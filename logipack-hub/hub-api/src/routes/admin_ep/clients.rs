@@ -49,6 +49,7 @@ async fn list_clients_handler(
             name: client.name,
             phone: client.phone,
             email: client.email,
+            updated_at: client.updated_at.to_rfc3339(),
         })
         .collect();
 
@@ -91,6 +92,7 @@ async fn get_client_handler(
             name: client.name,
             phone: client.phone,
             email: client.email,
+            updated_at: client.updated_at.to_rfc3339(),
         },
     };
 
@@ -125,8 +127,29 @@ async fn create_client_handler(
             }
         })?;
 
+    let out = core_application::clients::get::get_client(&state.db, &actor, client_id)
+        .await
+        .map_err(|e| match e {
+            core_application::clients::get::GetClientError::NotFound => {
+                ApiError::not_found("client_not_found", "Client not found")
+            }
+            core_application::clients::get::GetClientError::Forbidden => {
+                ApiError::forbidden("access_denied", "Access denied")
+            }
+            core_application::clients::get::GetClientError::ClientError(err) => {
+                ApiError::internal(err.to_string())
+            }
+        })?;
+
+    let client = out.ok_or_else(|| ApiError::not_found("client_not_found", "Client not found"))?;
     let result = CreateClientResponse {
-        client_id: client_id.to_string(),
+        client: ClientDto {
+            id: client.id.to_string(),
+            name: client.name,
+            phone: client.phone,
+            email: client.email,
+            updated_at: client.updated_at.to_rfc3339(),
+        },
     };
 
     Ok((axum::http::StatusCode::CREATED, Json(result)))
@@ -153,7 +176,7 @@ async fn update_client_handler(
         email: request.email,
     };
 
-    let out = core_application::clients::update::update_client(&state.db, &actor, input)
+    let updated_id = core_application::clients::update::update_client(&state.db, &actor, input)
         .await
         .map_err(|e| match e {
             core_application::clients::update::UpdateClientError::NotFound => {
@@ -170,8 +193,29 @@ async fn update_client_handler(
             }
         })?;
 
+    let out = core_application::clients::get::get_client(&state.db, &actor, updated_id)
+        .await
+        .map_err(|e| match e {
+            core_application::clients::get::GetClientError::NotFound => {
+                ApiError::not_found("client_not_found", "Client not found")
+            }
+            core_application::clients::get::GetClientError::Forbidden => {
+                ApiError::forbidden("access_denied", "Access denied")
+            }
+            core_application::clients::get::GetClientError::ClientError(err) => {
+                ApiError::internal(err.to_string())
+            }
+        })?;
+
+    let client = out.ok_or_else(|| ApiError::not_found("client_not_found", "Client not found"))?;
     let result = UpdateClientResponse {
-        client_id: out.to_string(),
+        client: ClientDto {
+            id: client.id.to_string(),
+            name: client.name,
+            phone: client.phone,
+            email: client.email,
+            updated_at: client.updated_at.to_rfc3339(),
+        },
     };
 
     Ok(Json(result))
