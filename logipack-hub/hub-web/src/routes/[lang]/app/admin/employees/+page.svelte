@@ -1,21 +1,26 @@
 <script lang="ts">
-	/*
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
-	import type { PageData } from "./$types";
 
-	type EmployeeListRow = Extract<
-		PageData["result"],
-		{ state: "ok" }
-	>["employees"][number];
+	type EmployeeListRow = {
+		id: string;
+		user_display_name: string | null;
+		full_name: string | null;
+		email: string;
+		office_name: string | null;
+		office_city: string | null;
+	};
 
-	let { data }: { data: PageData } = $props();
+	type EmployeesPageData = {
+		employees: EmployeeListRow[];
+		loadError: boolean;
+	};
+
+	let { data }: { data: EmployeesPageData } = $props();
 
 	let lang = $derived(page.params.lang || "en");
-	let employees = $derived(
-		data.result.state === "ok" ? data.result.employees : [],
-	);
+	let employees = $derived(data.employees);
 
 	function openEmployee(id: string): void {
 		void goto(`/${lang}/app/admin/employees/${id}`);
@@ -33,7 +38,7 @@
 	}
 
 	function userNameLabel(employee: EmployeeListRow): string {
-		return employee.user_display_name ?? employee.full_name;
+		return employee.user_display_name ?? employee.full_name ?? "";
 	}
 
 	function officeLabel(employee: EmployeeListRow): string | null {
@@ -43,11 +48,9 @@
 		if (employee.office_name) return employee.office_name;
 		return null;
 	}
-	*/
 </script>
 
-<!--
-{#if data.result.state === "error"}
+{#if data.loadError}
 	<div class="stagger stagger-1 flex flex-col items-center py-20 text-center">
 		<div
 			class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10"
@@ -70,7 +73,7 @@
 			{$_("admin.employees.error.headline")}
 		</h2>
 		<p class="mt-1 max-w-sm text-sm text-surface-400">
-			{$_(data.result.message ?? "admin.employees.error.generic")}
+			{$_("admin.employees.error.generic")}
 		</p>
 		<div class="mt-5 flex items-center gap-2">
 			<a
@@ -120,7 +123,7 @@
 		</div>
 	</section>
 
-	{#if data.result.state === "empty"}
+	{#if employees.length === 0}
 		<div
 			class="stagger stagger-2 mt-6 flex flex-col items-center rounded-xl border border-surface-700/50 bg-surface-900 py-20 text-center"
 		>
@@ -229,4 +232,3 @@
 		</div>
 	{/if}
 {/if}
--->

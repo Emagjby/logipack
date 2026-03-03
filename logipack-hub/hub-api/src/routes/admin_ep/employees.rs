@@ -7,8 +7,9 @@ use core_application::actor::ActorContext;
 
 use crate::{
     dto::employees::{
-        CreateEmployeeRequest, CreateEmployeeResponse, EmployeeDto, GetEmployeeResponse,
-        ListEmployeesResponse, UpdateEmployeeRequest, UpdateEmployeeResponse,
+        CreateEmployeeRequest, CreateEmployeeResponse, EmployeeDto, EmployeeListItemDto,
+        GetEmployeeResponse, ListEmployeesResponse, UpdateEmployeeRequest, UpdateEmployeeResponse,
+        UserDto,
     },
     error::ApiError,
     policy,
@@ -43,13 +44,18 @@ async fn list_employees_handler(
             }
         })?;
 
-    let dtos: Vec<EmployeeDto> = out
+    let dtos: Vec<EmployeeListItemDto> = out
         .into_iter()
-        .map(|employee| EmployeeDto {
-            id: employee.employee.id.to_string(),
-            user_id: employee.employee.user_id.to_string(),
-            name: employee.user.name,
-            email: employee.user.email,
+        .map(|employee| {
+            let email = employee.user.email.unwrap_or_default();
+            EmployeeListItemDto {
+                id: employee.employee.id.to_string(),
+                user_id: employee.employee.user_id.to_string(),
+                full_name: employee.user.name,
+                user_display_name: None,
+                email,
+                offices: None,
+            }
         })
         .collect();
 
@@ -88,8 +94,18 @@ async fn get_employee_handler(
         employee: EmployeeDto {
             id: out.employee.id.to_string(),
             user_id: out.employee.user_id.to_string(),
-            name: out.user.name,
-            email: out.user.email,
+            full_name: out.user.name.clone(),
+            user_display_name: None,
+            email: out.user.email.clone().unwrap_or_default(),
+            user: Some(UserDto {
+                id: out.user.id.to_string(),
+                email: out.user.email.unwrap_or_default(),
+                name: Some(out.user.name),
+            }),
+            offices: None,
+            created_at: Some(out.employee.created_at.to_rfc3339()),
+            updated_at: Some(out.employee.updated_at.to_rfc3339()),
+            deleted_at: out.employee.deleted_at.map(|dt| dt.to_rfc3339()),
         },
     };
 
@@ -104,12 +120,9 @@ async fn create_employee_handler(
     policy::require_admin(&actor)
         .map_err(|_| ApiError::forbidden("access_denied", "Access denied"))?;
 
-    let user_id = request
-        .user_id
-        .parse::<uuid::Uuid>()
-        .map_err(|_| ApiError::bad_request("invalid_user_id", "User ID must be a valid UUID"))?;
-
-    let input = core_application::employees::create::CreateEmployee { user_id };
+    let input = core_application::employees::create::CreateEmployee {
+        email: request.email,
+    };
 
     let employee_id =
         core_application::employees::create::create_employee(&state.db, &actor, input)
@@ -117,6 +130,12 @@ async fn create_employee_handler(
             .map_err(|e| match e {
                 core_application::employees::create::CreateEmployeeError::Forbidden => {
                     ApiError::forbidden("access_denied", "Access denied")
+                }
+                core_application::employees::create::CreateEmployeeError::UserNotFound => {
+                    ApiError::not_found("user_not_found", "User not found")
+                }
+                core_application::employees::create::CreateEmployeeError::UserError(err) => {
+                    ApiError::internal(err.to_string())
                 }
                 core_application::employees::create::CreateEmployeeError::EmployeeCreationError(
                     err,
@@ -133,8 +152,37 @@ async fn create_employee_handler(
                 },
             })?;
 
+    let out = core_application::employees::get::get_employee(&state.db, &actor, employee_id)
+        .await
+        .map_err(|e| match e {
+            core_application::employees::get::GetEmployeeError::NotFound => {
+                ApiError::not_found("employee_not_found", "Employee not found")
+            }
+            core_application::employees::get::GetEmployeeError::Forbidden => {
+                ApiError::forbidden("access_denied", "Access denied")
+            }
+            core_application::employees::get::GetEmployeeError::EmployeeError(err) => {
+                ApiError::internal(err.to_string())
+            }
+        })?;
+
     let result = CreateEmployeeResponse {
-        employee_id: employee_id.to_string(),
+        employee: EmployeeDto {
+            id: out.employee.id.to_string(),
+            user_id: out.employee.user_id.to_string(),
+            full_name: out.user.name.clone(),
+            user_display_name: None,
+            email: out.user.email.clone().unwrap_or_default(),
+            user: Some(UserDto {
+                id: out.user.id.to_string(),
+                email: out.user.email.unwrap_or_default(),
+                name: Some(out.user.name),
+            }),
+            offices: None,
+            created_at: Some(out.employee.created_at.to_rfc3339()),
+            updated_at: Some(out.employee.updated_at.to_rfc3339()),
+            deleted_at: out.employee.deleted_at.map(|dt| dt.to_rfc3339()),
+        },
     };
 
     Ok((axum::http::StatusCode::CREATED, Json(result)))
@@ -169,8 +217,37 @@ async fn update_employee_handler(
             }
         })?;
 
+    let out = core_application::employees::get::get_employee(&state.db, &actor, out)
+        .await
+        .map_err(|e| match e {
+            core_application::employees::get::GetEmployeeError::NotFound => {
+                ApiError::not_found("employee_not_found", "Employee not found")
+            }
+            core_application::employees::get::GetEmployeeError::Forbidden => {
+                ApiError::forbidden("access_denied", "Access denied")
+            }
+            core_application::employees::get::GetEmployeeError::EmployeeError(err) => {
+                ApiError::internal(err.to_string())
+            }
+        })?;
+
     let result = UpdateEmployeeResponse {
-        employee_id: out.to_string(),
+        employee: EmployeeDto {
+            id: out.employee.id.to_string(),
+            user_id: out.employee.user_id.to_string(),
+            full_name: out.user.name.clone(),
+            user_display_name: None,
+            email: out.user.email.clone().unwrap_or_default(),
+            user: Some(UserDto {
+                id: out.user.id.to_string(),
+                email: out.user.email.unwrap_or_default(),
+                name: Some(out.user.name),
+            }),
+            offices: None,
+            created_at: Some(out.employee.created_at.to_rfc3339()),
+            updated_at: Some(out.employee.updated_at.to_rfc3339()),
+            deleted_at: out.employee.deleted_at.map(|dt| dt.to_rfc3339()),
+        },
     };
 
     Ok(Json(result))

@@ -1,9 +1,10 @@
 use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, DatabaseConnection, DbBackend, EntityTrait, Set, Statement,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbBackend, EntityTrait,
+    QueryFilter, Set, Statement,
 };
 use uuid::Uuid;
 
-use core_data::entity::{employees, users};
+use core_data::entity::{employees, roles, user_roles, users};
 use core_data::repository::employees_repo::{EmployeeError, EmployeesRepo};
 use test_infra::test_db;
 
@@ -70,6 +71,37 @@ async fn create_inserts_row_with_null_deleted_at() {
         .unwrap()
         .unwrap();
     assert_eq!(user.name, "Test User".to_string());
+}
+
+#[tokio::test]
+async fn create_assigns_employee_role() {
+    let db = test_db().await;
+    cleanup_core_data(&db).await;
+
+    let role_id = Uuid::new_v4();
+    roles::ActiveModel {
+        id: Set(role_id),
+        name: Set("employee".into()),
+    }
+    .insert(&db)
+    .await
+    .unwrap();
+
+    let user_id = seed_user(&db).await;
+    let id = Uuid::new_v4();
+
+    EmployeesRepo::create_employee(&db, id, user_id)
+        .await
+        .unwrap();
+
+    let link = user_roles::Entity::find()
+        .filter(user_roles::Column::UserId.eq(user_id))
+        .filter(user_roles::Column::RoleId.eq(role_id))
+        .one(&db)
+        .await
+        .unwrap();
+
+    assert!(link.is_some());
 }
 
 #[tokio::test]
@@ -154,6 +186,36 @@ async fn delete_already_deleted_returns_record_not_found() {
 
     let result = EmployeesRepo::delete_employee(&db, id).await.unwrap_err();
     assert!(matches!(result, EmployeeError::RecordNotFound));
+}
+
+#[tokio::test]
+async fn create_resurrects_soft_deleted_employee_for_same_user() {
+    let db = test_db().await;
+    cleanup_core_data(&db).await;
+
+    let user_id = seed_user(&db).await;
+    let id = Uuid::new_v4();
+
+    EmployeesRepo::create_employee(&db, id, user_id)
+        .await
+        .unwrap();
+    EmployeesRepo::delete_employee(&db, id).await.unwrap();
+
+    let new_id = Uuid::new_v4();
+    let recreated_id = EmployeesRepo::create_employee(&db, new_id, user_id)
+        .await
+        .unwrap();
+
+    let employee = employees::Entity::find()
+        .filter(employees::Column::UserId.eq(user_id))
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert!(employee.deleted_at.is_none());
+    assert_eq!(employee.user_id, user_id);
+    assert_eq!(recreated_id, employee.id);
 }
 
 #[tokio::test]

@@ -35,3 +35,5 @@ export * from "./mappers/identity";
 
 export * from "./services/identity";
 export * from "./services/offices";
+export * from "./services/clients";
+export * from "./services/employees";

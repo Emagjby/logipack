@@ -6,9 +6,10 @@ use core_application::employees::list::ListEmployeesError;
 use core_application::employees::update::{UpdateEmployee, UpdateEmployeeError, update_employee};
 use core_application::roles::Role;
 use core_data::entity::{employees, users};
+use core_data::entity::{roles, user_roles};
 use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, DatabaseConnection, DbBackend, EntityTrait, IntoActiveModel,
-    Set, Statement,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbBackend, EntityTrait,
+    IntoActiveModel, QueryFilter, Set, Statement,
 };
 use test_infra::test_db;
 use uuid::Uuid;
@@ -135,14 +136,67 @@ async fn admin_can_create_employee() {
 
     let admin = admin_actor(&db).await;
     let user_id = seed_user(&db, Some("user".to_string())).await;
-
-    let employee_id = create_employee(&db, &admin, CreateEmployee { user_id })
+    let user = users::Entity::find_by_id(user_id)
+        .one(&db)
         .await
+        .unwrap()
         .unwrap();
+
+    let employee_id = create_employee(
+        &db,
+        &admin,
+        CreateEmployee {
+            email: user.email.unwrap(),
+        },
+    )
+    .await
+    .unwrap();
 
     let result = get_employee(&db, &admin, employee_id).await.unwrap();
     assert_eq!(result.employee.user_id, user_id);
     assert_eq!(result.user.name, "Test User".to_string());
+}
+
+#[tokio::test]
+async fn creating_employee_assigns_employee_role() {
+    let db = test_db().await;
+    cleanup(&db).await;
+
+    let role_id = Uuid::new_v4();
+    roles::ActiveModel {
+        id: Set(role_id),
+        name: Set("employee".into()),
+    }
+    .insert(&db)
+    .await
+    .unwrap();
+
+    let admin = admin_actor(&db).await;
+    let user_id = seed_user(&db, Some("user".to_string())).await;
+    let user = users::Entity::find_by_id(user_id)
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
+
+    create_employee(
+        &db,
+        &admin,
+        CreateEmployee {
+            email: user.email.unwrap(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let link = user_roles::Entity::find()
+        .filter(user_roles::Column::UserId.eq(user_id))
+        .filter(user_roles::Column::RoleId.eq(role_id))
+        .one(&db)
+        .await
+        .unwrap();
+
+    assert!(link.is_some());
 }
 
 #[tokio::test]
@@ -152,10 +206,21 @@ async fn employee_cannot_create_employee() {
 
     let employee = employee_actor(&db).await;
     let user_id = seed_user(&db, Some("user".to_string())).await;
-
-    let result = create_employee(&db, &employee, CreateEmployee { user_id })
+    let user = users::Entity::find_by_id(user_id)
+        .one(&db)
         .await
-        .unwrap_err();
+        .unwrap()
+        .unwrap();
+
+    let result = create_employee(
+        &db,
+        &employee,
+        CreateEmployee {
+            email: user.email.unwrap(),
+        },
+    )
+    .await
+    .unwrap_err();
 
     assert!(matches!(result, CreateEmployeeError::Forbidden));
 }
@@ -167,10 +232,21 @@ async fn no_role_cannot_create_employee() {
 
     let user = no_role_actor(&db).await;
     let user_id = seed_user(&db, Some("user".to_string())).await;
-
-    let result = create_employee(&db, &user, CreateEmployee { user_id })
+    let seeded_user = users::Entity::find_by_id(user_id)
+        .one(&db)
         .await
-        .unwrap_err();
+        .unwrap()
+        .unwrap();
+
+    let result = create_employee(
+        &db,
+        &user,
+        CreateEmployee {
+            email: seeded_user.email.unwrap(),
+        },
+    )
+    .await
+    .unwrap_err();
 
     assert!(matches!(result, CreateEmployeeError::Forbidden));
 }
@@ -182,10 +258,21 @@ async fn admin_can_create_employee_and_name_is_preserved() {
 
     let admin = admin_actor(&db).await;
     let user_id = seed_user(&db, Some("user".to_string())).await;
-
-    let employee_id = create_employee(&db, &admin, CreateEmployee { user_id })
+    let user = users::Entity::find_by_id(user_id)
+        .one(&db)
         .await
+        .unwrap()
         .unwrap();
+
+    let employee_id = create_employee(
+        &db,
+        &admin,
+        CreateEmployee {
+            email: user.email.unwrap(),
+        },
+    )
+    .await
+    .unwrap();
 
     let result = get_employee(&db, &admin, employee_id).await.unwrap();
     assert_eq!(result.user.name, "Test User".to_string());
@@ -296,6 +383,81 @@ async fn admin_can_delete_employee() {
 
     let result = get_employee(&db, &admin, employee_id).await.unwrap_err();
     assert!(matches!(result, GetEmployeeError::NotFound));
+}
+
+#[tokio::test]
+async fn admin_can_recreate_soft_deleted_employee() {
+    let db = test_db().await;
+    cleanup(&db).await;
+
+    let admin = admin_actor(&db).await;
+    let user_id = seed_user(&db, Some("user".to_string())).await;
+    let user = users::Entity::find_by_id(user_id)
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
+
+    let employee_id = create_employee(
+        &db,
+        &admin,
+        CreateEmployee {
+            email: user.email.clone().unwrap(),
+        },
+    )
+    .await
+    .unwrap();
+
+    delete_employee(&db, &admin, employee_id).await.unwrap();
+
+    let recreated_id = create_employee(
+        &db,
+        &admin,
+        CreateEmployee {
+            email: user.email.unwrap(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let detail = get_employee(&db, &admin, recreated_id).await.unwrap();
+    assert!(detail.employee.deleted_at.is_none());
+}
+
+#[tokio::test]
+async fn admin_create_existing_employee_returns_existing_id() {
+    let db = test_db().await;
+    cleanup(&db).await;
+
+    let admin = admin_actor(&db).await;
+    let user_id = seed_user(&db, Some("user".to_string())).await;
+    let user = users::Entity::find_by_id(user_id)
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
+
+    let employee_id = create_employee(
+        &db,
+        &admin,
+        CreateEmployee {
+            email: user.email.clone().unwrap(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let second_id = create_employee(
+        &db,
+        &admin,
+        CreateEmployee {
+            email: user.email.unwrap(),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(second_id, employee_id);
 }
 
 #[tokio::test]
@@ -431,9 +593,20 @@ async fn admin_can_list_employees() {
 
     for i in 0..5 {
         let user_id = seed_user(&db, Some(format!("user_{i}"))).await;
-        create_employee(&db, &admin, CreateEmployee { user_id })
+        let user = users::Entity::find_by_id(user_id)
+            .one(&db)
             .await
+            .unwrap()
             .unwrap();
+        create_employee(
+            &db,
+            &admin,
+            CreateEmployee {
+                email: user.email.unwrap(),
+            },
+        )
+        .await
+        .unwrap();
     }
 
     let result = core_application::employees::list::list_employees(&db, &admin)
@@ -453,9 +626,20 @@ async fn employee_cannot_list_employees() {
 
     for i in 0..5 {
         let user_id = seed_user(&db, Some(format!("user_{i}"))).await;
-        create_employee(&db, &admin, CreateEmployee { user_id })
+        let user = users::Entity::find_by_id(user_id)
+            .one(&db)
             .await
+            .unwrap()
             .unwrap();
+        create_employee(
+            &db,
+            &admin,
+            CreateEmployee {
+                email: user.email.unwrap(),
+            },
+        )
+        .await
+        .unwrap();
     }
 
     let result = core_application::employees::list::list_employees(&db, &employee)
@@ -475,9 +659,20 @@ async fn no_role_cannot_list_employees() {
 
     for i in 0..5 {
         let user_id = seed_user(&db, Some(format!("user_{i}"))).await;
-        create_employee(&db, &admin, CreateEmployee { user_id })
+        let user = users::Entity::find_by_id(user_id)
+            .one(&db)
             .await
+            .unwrap()
             .unwrap();
+        create_employee(
+            &db,
+            &admin,
+            CreateEmployee {
+                email: user.email.unwrap(),
+            },
+        )
+        .await
+        .unwrap();
     }
 
     let result = core_application::employees::list::list_employees(&db, &user)

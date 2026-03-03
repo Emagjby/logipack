@@ -9,7 +9,9 @@
 	let lang = $derived(page.params.lang || "en");
 	let clients = $derived(data.clients);
 	let copiedClientId = $state<string | null>(null);
-	let copiedClientIdTimer = $state<ReturnType<typeof setTimeout> | null>(null);
+	let copiedClientIdTimer = $state<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	function openClient(id: string): void {
 		void goto(`/${lang}/app/admin/clients/${id}`);
@@ -31,7 +33,10 @@
 		return `${head || id}...`;
 	}
 
-	async function copyClientId(event: MouseEvent, clientId: string): Promise<void> {
+	async function copyClientId(
+		event: MouseEvent,
+		clientId: string,
+	): Promise<void> {
 		event.preventDefault();
 		event.stopPropagation();
 
@@ -93,7 +98,9 @@
 				<span
 					class="rounded-full border border-surface-700/50 bg-surface-900 px-2.5 py-1 text-xs font-medium text-surface-400"
 				>
-					{$_("admin.clients.scope", { values: { count: clients.length } })}
+					{$_("admin.clients.scope", {
+						values: { count: clients.length },
+					})}
 				</span>
 			</div>
 		</div>
@@ -186,14 +193,20 @@
 							>
 								<td class="px-5 py-3 text-sm text-accent">
 									<div class="flex items-center gap-2">
-										<span class="font-mono">{compactClientId(client.id)}</span>
+										<span class="font-mono"
+											>{compactClientId(client.id)}</span
+										>
 										<button
 											type="button"
-											onclick={(event) => copyClientId(event, client.id)}
-											onkeydown={(event) => event.stopPropagation()}
+											onclick={(event) =>
+												copyClientId(event, client.id)}
+											onkeydown={(event) =>
+												event.stopPropagation()}
 											class="rounded-md bg-surface-800 px-1.5 py-1 text-[11px] font-medium text-surface-400 transition-colors hover:bg-surface-700"
 											title={$_("admin.clients.copy_id")}
-											aria-label={$_("admin.clients.copy_id")}
+											aria-label={$_(
+												"admin.clients.copy_id",
+											)}
 										>
 											{#if copiedClientId === client.id}
 												{$_("admin.clients.copied")}
@@ -220,7 +233,9 @@
 										</button>
 									</div>
 								</td>
-								<td class="px-5 py-3 text-sm font-medium text-surface-50">
+								<td
+									class="px-5 py-3 text-sm font-medium text-surface-50"
+								>
 									{client.name}
 								</td>
 								<td class="px-5 py-3 text-sm text-surface-200">

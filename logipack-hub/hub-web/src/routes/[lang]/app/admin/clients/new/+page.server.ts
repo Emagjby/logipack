@@ -32,12 +32,19 @@ export const actions: Actions = {
 
 			throw redirect(
 				303,
-				`${params.lang ?? "en"}/app/admin/clients/${created.id}`,
+				`/${params.lang ?? "en"}/app/admin/clients/${created.id}`,
 			);
 		} catch (e) {
 			if (isRedirect(e)) {
 				throw e;
 			}
+
+			console.error("admin.clients.new.submit_failed", {
+				name: values.name,
+				email: values.email,
+				phone: values.phone,
+				e,
+			});
 
 			if (e instanceof HubApiError && e.status === 400) {
 				return fail(400, {
