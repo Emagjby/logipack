@@ -1,21 +1,55 @@
 <script lang="ts">
-	/*
 	import { enhance } from "$app/forms";
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
 	import type { ActionData, PageData } from "./$types";
 
+	type EmployeeContext = {
+		id: string;
+		user_id: string;
+		full_name: string;
+		user_display_name: string | null;
+	};
+
+	type OfficeContext = {
+		id: string;
+		name: string;
+		city: string;
+		address: string;
+	};
+
+	type OfficesResult =
+		| {
+				state: "ok";
+				employee: EmployeeContext;
+				offices: OfficeContext[];
+				currentOfficeId: string | null;
+				currentOffice: OfficeContext | null;
+				hasMultipleOffices: boolean;
+		  }
+		| { state: "error"; message?: string }
+		| { state: "not_found" };
+
+	type PageDataWithResult = PageData & { result: OfficesResult };
+
+	type AssignOfficeActionData = ActionData & {
+		fieldErrors?: { office_id?: string };
+		submitError?: string | null;
+		values?: { office_id?: string };
+	};
+
 	let {
 		data,
 		form,
 	}: {
-		data: PageData;
-		form: ActionData | null;
+		data: PageDataWithResult;
+		form: AssignOfficeActionData | null;
 	} = $props();
 
 	let lang = $derived(page.params.lang || "en");
 	let employeeId = $derived(page.params.id || "");
 	let submitting = $state(false);
+	const selectedOfficeId = "";
 
 	const enhanceSubmit = () => {
 		submitting = true;
@@ -30,10 +64,6 @@
 
 	let submitError = $derived(form?.submitError ?? null);
 	let officeError = $derived(form?.fieldErrors?.office_id ?? null);
-	let selectedOfficeId = $derived(
-		form?.values?.office_id ??
-			(data.result.state === "ok" ? (data.result.currentOfficeId ?? "") : ""),
-	);
 
 	function employeeNameLabel(employee: {
 		user_display_name: string | null;
@@ -46,10 +76,8 @@
 	function officeLabel(office: { name: string; city: string }): string {
 		return `${office.name} (${office.city})`;
 	}
-	*/
 </script>
 
-<!--
 {#if data.result.state === "error"}
 	<div class="stagger stagger-1 flex flex-col items-center py-20 text-center">
 		<div
@@ -277,4 +305,3 @@
 		</section>
 	{/if}
 {/if}
--->

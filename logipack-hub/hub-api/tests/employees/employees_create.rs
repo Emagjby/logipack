@@ -5,6 +5,7 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use hub_api::dto::employees::CreateEmployeeResponse;
+use sea_orm::EntityTrait;
 use serde_json::json;
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -17,6 +18,11 @@ use crate::helpers::{
 async fn admin_can_create_employee() {
     let (app, db, admin) = setup_app_with_admin().await;
     let user_id = seed_user_for_employee(&db).await;
+    let user = core_data::entity::users::Entity::find_by_id(user_id)
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
 
     let res = app
         .oneshot(
@@ -28,7 +34,7 @@ async fn admin_can_create_employee() {
                 .uri("/admin/employees")
                 .body(Body::from(
                     serde_json::to_vec(&json!({
-                        "user_id": user_id.to_string(),
+                        "email": user.email.unwrap(),
                     }))
                     .unwrap(),
                 ))
@@ -40,7 +46,7 @@ async fn admin_can_create_employee() {
     assert_eq!(res.status(), StatusCode::CREATED);
     let body = res.into_body().collect().await.unwrap().to_bytes();
     let body: CreateEmployeeResponse = serde_json::from_slice(&body).unwrap();
-    let employee_id = Uuid::parse_str(&body.employee_id).unwrap();
+    let employee_id = Uuid::parse_str(&body.employee.id).unwrap();
 
     assert_ne!(employee_id, Uuid::nil());
 }
@@ -50,6 +56,11 @@ async fn employee_cannot_create_employee() {
     let (app, db) = setup_app_with_db().await;
     let employee = seed_employee(&db).await;
     let user_id = seed_user_for_employee(&db).await;
+    let user = core_data::entity::users::Entity::find_by_id(user_id)
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
 
     let res = app
         .oneshot(
@@ -61,7 +72,7 @@ async fn employee_cannot_create_employee() {
                 .uri("/admin/employees")
                 .body(Body::from(
                     serde_json::to_vec(&json!({
-                        "user_id": user_id.to_string(),
+                        "email": user.email.unwrap(),
                     }))
                     .unwrap(),
                 ))
@@ -77,6 +88,11 @@ async fn employee_cannot_create_employee() {
 async fn no_role_cannot_create_employee() {
     let (app, db) = setup_app_with_db().await;
     let user_id = seed_user_for_employee(&db).await;
+    let user = core_data::entity::users::Entity::find_by_id(user_id)
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
 
     let res = app
         .oneshot(
@@ -88,7 +104,7 @@ async fn no_role_cannot_create_employee() {
                 .uri("/admin/employees")
                 .body(Body::from(
                     serde_json::to_vec(&json!({
-                        "user_id": user_id.to_string(),
+                        "email": user.email.unwrap(),
                     }))
                     .unwrap(),
                 ))

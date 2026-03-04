@@ -1,14 +1,24 @@
 <script lang="ts">
-	/*
-	import type { ActionData, PageData } from "./$types";
+	import type { ActionData } from "./$types";
 	import { page } from "$app/state";
+	import { onDestroy } from "svelte";
 	import { _ } from "svelte-i18n";
+	import type { EmployeeDetail } from "$lib/server/hubApi/mappers/employees";
+
+	type EmployeeDetailResult =
+		| ({ state: "ok" } & EmployeeDetail)
+		| { state: "not_found" }
+		| { state: "error"; message: string };
+
+	type EmployeeDetailPageData = {
+		result: EmployeeDetailResult;
+	};
 
 	let {
 		data,
 		form,
 	}: {
-		data: PageData;
+		data: EmployeeDetailPageData;
 		form: ActionData | null;
 	} = $props();
 
@@ -18,13 +28,10 @@
 	let copyTimer = $state<ReturnType<typeof setTimeout> | null>(null);
 	let submitError = $derived(form?.submitError ?? null);
 
-	$effect(() => {
-		return () => {
-			if (copyTimer) {
-				clearTimeout(copyTimer);
-				copyTimer = null;
-			}
-		};
+	onDestroy(() => {
+		if (copyTimer) {
+			clearTimeout(copyTimer);
+		}
 	});
 
 	async function copyId(id: string): Promise<void> {
@@ -46,10 +53,8 @@
 			event.preventDefault();
 		}
 	}
-	*/
 </script>
 
-<!--
 {#if data.result.state === "error"}
 	<div class="stagger stagger-1 flex flex-col items-center py-20 text-center">
 		<div
@@ -117,9 +122,12 @@
 		</a>
 	</div>
 {:else}
-	{@const employee = data.result.employee}
-	{@const user = data.result.user}
-	{@const office = data.result.office}
+	{@const employee = data.result}
+	{@const officeName = employee.office_name ?? ""}
+	{@const officeCity = employee.office_city ?? ""}
+	{@const hasOffice = Boolean(officeName || officeCity)}
+	{@const userName = employee.user_display_name ?? employee.full_name ?? employee.user_id}
+	{@const userEmail = employee.email ?? "—"}
 
 	<section
 		class="stagger stagger-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
@@ -127,7 +135,7 @@
 		<div>
 			<h1 class="text-2xl font-bold text-surface-50">
 				{$_("admin.employees.detail.headline", {
-					values: { name: user.name },
+					values: { name: userName },
 				})}
 			</h1>
 			<p class="mt-1 text-sm text-surface-400">
@@ -147,7 +155,7 @@
 				href={`/${lang}/app/admin/employees/${employee.id}/offices`}
 				class="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
 			>
-				{office
+				{hasOffice
 					? $_("admin.employees.detail.change_office")
 					: $_("admin.employees.detail.set_office")}
 			</a>
@@ -184,7 +192,7 @@
 					{$_("admin.employees.detail.user_name")}
 				</dt>
 				<dd class="mt-1 text-sm text-surface-200">
-					{user.name}
+					{userName}
 				</dd>
 			</div>
 
@@ -195,7 +203,7 @@
 					{$_("admin.employees.detail.user_email")}
 				</dt>
 				<dd class="mt-1 text-sm text-surface-200">
-					{user.email}
+					{userEmail}
 				</dd>
 			</div>
 
@@ -258,25 +266,19 @@
 				>
 					{$_("admin.employees.detail.office")}
 				</dt>
-				{#if office}
-					<dd class="mt-1 text-sm text-surface-200">
-						{office.name} ({office.city})
-						<p class="mt-1 text-xs text-surface-400">
-							{office.address}
-						</p>
-					</dd>
-				{:else}
-					<dd class="mt-1 text-sm text-surface-200">
-						{$_("admin.employees.detail.no_office_assigned")}
-					</dd>
-				{/if}
-				{#if data.result.hasMultipleOffices}
-					<p class="mt-2 text-xs text-amber-300">
-						{$_("admin.employees.detail.multi_office_warning")}
-					</p>
-				{/if}
-			</div>
+			{#if hasOffice}
+				<dd class="mt-1 text-sm text-surface-200">
+					{officeName}
+					{#if officeCity}
+						<span class="text-surface-500">({officeCity})</span>
+					{/if}
+				</dd>
+			{:else}
+				<dd class="mt-1 text-sm text-surface-200">
+					{$_("admin.employees.detail.no_office_assigned")}
+				</dd>
+			{/if}
+	</div>
 		</dl>
 	</div>
 {/if}
--->

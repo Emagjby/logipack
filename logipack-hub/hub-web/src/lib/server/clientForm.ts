@@ -24,12 +24,16 @@ export function parseClientFormData(formData: FormData): ClientFormValues {
 export function validateClientForm(values: ClientFormValues): ClientFieldErrors {
 	const fieldErrors: ClientFieldErrors = {};
 	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	const phonePattern = /^\+\d{6,15}$/;
 
 	if (!values.name) {
 		fieldErrors.name = "client.form.name_required";
 	}
 	if (values.email && !emailPattern.test(values.email)) {
 		fieldErrors.email = "client.form.email_invalid";
+	}
+	if (values.phone && !phonePattern.test(values.phone)) {
+		fieldErrors.phone = "client.form.phone_invalid";
 	}
 
 	return fieldErrors;

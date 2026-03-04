@@ -38,7 +38,7 @@ async fn admin_can_update_employee() {
     let body = res.into_body().collect().await.unwrap().to_bytes();
     let body: UpdateEmployeeResponse = serde_json::from_slice(&body).unwrap();
 
-    assert_eq!(body.employee_id, employee_id.to_string());
+    assert_eq!(body.employee.id, employee_id.to_string());
 }
 
 #[tokio::test]

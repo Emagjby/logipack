@@ -1,4 +1,4 @@
-use core_data::repository::employees_repo::{self, EmployeeError, EmployeeWithUser};
+use core_data::repository::employees_repo::{self, EmployeeError, EmployeeWithUserAndOffices};
 use sea_orm::DatabaseConnection;
 use thiserror::Error;
 
@@ -15,13 +15,13 @@ pub enum ListEmployeesError {
 pub async fn list_employees(
     db: &DatabaseConnection,
     actor: &ActorContext,
-) -> Result<Vec<EmployeeWithUser>, ListEmployeesError> {
+) -> Result<Vec<EmployeeWithUserAndOffices>, ListEmployeesError> {
     // Only admin can list employees
     if !actor.is_admin() {
         return Err(ListEmployeesError::Forbidden);
     }
 
-    let result = employees_repo::EmployeesRepo::list_employees(db).await?;
+    let employees = employees_repo::EmployeesRepo::list_employees(db).await?;
 
-    Ok(result)
+    Ok(employees)
 }
