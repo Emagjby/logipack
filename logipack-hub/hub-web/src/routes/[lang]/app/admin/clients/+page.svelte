@@ -3,15 +3,12 @@
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
 	import type { PageData } from "./$types";
+	import CopyIconButton from "$lib/components/app/CopyIconButton.svelte";
 
 	let { data }: { data: PageData } = $props();
 
 	let lang = $derived(page.params.lang || "en");
 	let clients = $derived(data.clients);
-	let copiedClientId = $state<string | null>(null);
-	let copiedClientIdTimer = $state<ReturnType<typeof setTimeout> | null>(
-		null,
-	);
 
 	function openClient(id: string): void {
 		void goto(`/${lang}/app/admin/clients/${id}`);
@@ -33,25 +30,6 @@
 		return `${head || id}...`;
 	}
 
-	async function copyClientId(
-		event: MouseEvent,
-		clientId: string,
-	): Promise<void> {
-		event.preventDefault();
-		event.stopPropagation();
-
-		try {
-			await navigator.clipboard.writeText(clientId);
-			copiedClientId = clientId;
-			if (copiedClientIdTimer) clearTimeout(copiedClientIdTimer);
-			copiedClientIdTimer = setTimeout(() => {
-				if (copiedClientId === clientId) copiedClientId = null;
-				copiedClientIdTimer = null;
-			}, 1200);
-		} catch {
-			// Ignore clipboard failures (permission/browser restrictions).
-		}
-	}
 </script>
 
 {#if data.loadError}
@@ -196,41 +174,12 @@
 										<span class="font-mono"
 											>{compactClientId(client.id)}</span
 										>
-										<button
-											type="button"
-											onclick={(event) =>
-												copyClientId(event, client.id)}
-											onkeydown={(event) =>
-												event.stopPropagation()}
-											class="rounded-md bg-surface-800 px-1.5 py-1 text-[11px] font-medium text-surface-400 transition-colors hover:bg-surface-700"
+										<CopyIconButton
+											value={client.id}
 											title={$_("admin.clients.copy_id")}
-											aria-label={$_(
-												"admin.clients.copy_id",
-											)}
-										>
-											{#if copiedClientId === client.id}
-												{$_("admin.clients.copied")}
-											{:else}
-												<svg
-													class="h-3.5 w-3.5"
-													fill="none"
-													viewBox="0 0 24 24"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<rect
-														x="9"
-														y="9"
-														width="11"
-														height="11"
-														rx="2"
-													/>
-													<path
-														d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-													/>
-												</svg>
-											{/if}
-										</button>
+											ariaLabel={$_("admin.clients.copy_id")}
+											stopPropagation
+										/>
 									</div>
 								</td>
 								<td

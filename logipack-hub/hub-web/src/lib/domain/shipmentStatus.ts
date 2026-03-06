@@ -24,6 +24,7 @@ const ALIAS_MAP: Record<string, ShipmentStatus> = {
 	new: "new",
 	processed: "pending",
 	accepted: "accepted",
+	processing: "pending",
 	pending: "pending",
 	in_transit: "in_transit",
 	delivered: "delivered",
@@ -106,7 +107,7 @@ export function statusDotClass(status: ShipmentStatus | "unknown"): string {
 
 export interface ShipmentRow {
 	id: string;
-	status: ShipmentStatus;
+	status: ShipmentStatus | "unknown";
 	office: string;
 	updatedAt: string; // ISO-8601
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from "svelte";
 	import { _ } from "svelte-i18n";
 	import {
 		formatDateTime,
@@ -15,24 +16,8 @@
 		lang: string;
 		onclose: () => void;
 	} = $props();
-
-	let copied = $state(false);
-	let panelEl = $state<HTMLDivElement | null>(null);
-
-	async function copyJson() {
-		if (!pkg) return;
-		try {
-			await navigator.clipboard.writeText(
-				JSON.stringify(pkg.payload_json, null, 2),
-			);
-			copied = true;
-			setTimeout(() => {
-				copied = false;
-			}, 1200);
-		} catch (error) {
-			console.warn("Failed to copy Strata JSON payload", error);
-		}
-	}
+	let copiedStrata = $state(false);
+	let copiedTimer = $state<ReturnType<typeof setTimeout> | null>(null);
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (!pkg) return;
@@ -41,10 +26,33 @@
 		}
 	}
 
-	$effect(() => {
-		if (!pkg || !panelEl) return;
-		panelEl.focus();
+	function clearCopiedTimer(): void {
+		if (!copiedTimer) return;
+		clearTimeout(copiedTimer);
+		copiedTimer = null;
+	}
+
+	onDestroy(() => {
+		clearCopiedTimer();
 	});
+
+	async function handleCopyStrata(): Promise<void> {
+		if (!pkg) return;
+
+		try {
+			await navigator.clipboard.writeText(
+				JSON.stringify(pkg.payload_json, null, 2),
+			);
+			copiedStrata = true;
+			clearCopiedTimer();
+			copiedTimer = setTimeout(() => {
+				copiedStrata = false;
+				copiedTimer = null;
+			}, 1200);
+		} catch {
+			// Ignore clipboard errors.
+		}
+	}
 </script>
 
 <svelte:document onkeydown={handleKeydown} />
@@ -52,16 +60,13 @@
 {#if pkg}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<!-- Backdrop -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
 		onclick={onclose}
 	>
-		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<!-- Modal panel -->
 		<div
-			bind:this={panelEl}
 			class="relative mx-4 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
@@ -79,7 +84,7 @@
 				</h2>
 				<button
 					onclick={onclose}
-					class="rounded-lg p-1.5 text-surface-400 cursor-pointer transition-colors hover:bg-surface-800 hover:text-surface-300"
+					class="rounded-lg p-1.5 text-surface-400 cursor-pointer transition-colors hover:bg-surface-800 hover:text-surface-200"
 					aria-label={$_("shipment.viewer.close")}
 				>
 					<svg
@@ -204,17 +209,30 @@
 				class="flex items-center justify-end gap-3 border-t border-surface-700/50 px-6 py-4"
 			>
 				<button
-					onclick={copyJson}
-					class={[
-						"rounded-lg px-4 py-2 text-sm cursor-pointer font-medium transition-colors",
-						copied
-							? "bg-green-600 text-surface-900"
-							: "bg-accent text-surface-950 hover:bg-accent-hover",
-					]}
+					type="button"
+					onclick={handleCopyStrata}
+					class="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-surface-950 transition-colors hover:bg-accent-hover"
+					aria-live="polite"
 				>
-					{copied
-						? $_("shipment.viewer.copied")
-						: $_("shipment.viewer.copy_json")}
+					<span>{$_("shipment.viewer.copy_strata")}</span>
+					<span
+						class="inline-flex h-3.5 w-3.5 items-center justify-center"
+						aria-hidden="true"
+					>
+						{#if copiedStrata}
+							<svg
+								class="h-3.5 w-3.5"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M16.704 5.29a1 1 0 010 1.42l-8 8a1 1 0 01-1.42 0l-4-4a1 1 0 111.42-1.42L8 12.59l7.29-7.3a1 1 0 011.414 0z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+						{/if}
+					</span>
 				</button>
 				<button
 					onclick={onclose}

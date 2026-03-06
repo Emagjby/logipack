@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createHubApiClient } from "../httpClient";
 import { HubApiError } from "../errors";
-import { ensureUser, getMe } from "../services/identity";
+import { ensureUser, getMe, getMeContext } from "../services/identity";
 
 function makeFetchMock(
 	fn: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
@@ -52,6 +52,30 @@ describe("identity service", () => {
 
 		const role = await getMe(client);
 		expect(role).toBe("admin");
+	});
+
+	test("getMeContext success", async () => {
+		const fetchMock = makeFetchMock(async () => {
+			return new Response(
+				JSON.stringify({
+					role: "employee",
+					office_ids: ["office-1", "office-2"],
+					current_office_id: "office-2",
+				}),
+				{ status: 200 },
+			);
+		});
+
+		const client = createHubApiClient({
+			fetch: fetchMock,
+			locals: { session: { access_token: "tok" } } as any,
+			baseUrl: "https://example.com",
+		});
+
+		const me = await getMeContext(client);
+		expect(me.role).toBe("employee");
+		expect(me.office_ids).toEqual(["office-1", "office-2"]);
+		expect(me.current_office_id).toBe("office-2");
 	});
 
 	test("normalized error propagation", async () => {

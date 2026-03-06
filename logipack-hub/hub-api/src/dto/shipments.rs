@@ -1,6 +1,8 @@
 use base64::Engine;
 use core_domain::shipment::ShipmentStatus;
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
+use strata::value::Value as StrataValue;
 use uuid::Uuid;
 
 use crate::dto::{clients::ClientDto, offices::OfficeDto};
@@ -50,6 +52,28 @@ pub struct TimelineItem {
     pub event_type: String,
     /// Strata Canonical Bytes encoded as base64.
     pub scb: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub payload: Option<JsonValue>,
+}
+
+fn strata_to_json(value: &StrataValue) -> JsonValue {
+    match value {
+        StrataValue::Null => JsonValue::Null,
+        StrataValue::Bool(v) => JsonValue::Bool(*v),
+        StrataValue::Int(v) => JsonValue::Number((*v).into()),
+        StrataValue::String(v) => JsonValue::String(v.clone()),
+        StrataValue::Bytes(v) => {
+            JsonValue::String(base64::engine::general_purpose::STANDARD.encode(v))
+        }
+        StrataValue::List(items) => JsonValue::Array(items.iter().map(strata_to_json).collect()),
+        StrataValue::Map(map) => {
+            let mut out = serde_json::Map::with_capacity(map.len());
+            for (key, val) in map {
+                out.insert(key.clone(), strata_to_json(val));
+            }
+            JsonValue::Object(out)
+        }
+    }
 }
 
 impl From<core_eventstore::adapter::read::StreamPackage> for TimelineItem {
@@ -58,6 +82,7 @@ impl From<core_eventstore::adapter::read::StreamPackage> for TimelineItem {
             seq: value.seq,
             event_type: value.event_type,
             scb: base64::engine::general_purpose::STANDARD.encode(value.scb),
+            payload: Some(strata_to_json(&value.value)),
         }
     }
 }

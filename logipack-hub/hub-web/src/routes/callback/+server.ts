@@ -11,7 +11,7 @@ import {
 
 import { createHubApiClient } from "$lib/server/hubApi/httpClient";
 import { HubApiError } from "$lib/server/hubApi/errors";
-import { ensureUser, getMe } from "$lib/server/hubApi/services/identity";
+import { ensureUser, getMeContext } from "$lib/server/hubApi/services/identity";
 
 import { EncryptJWT } from "jose";
 
@@ -225,8 +225,13 @@ export const GET: RequestHandler = async ({ url, cookies, locals }) => {
 		}
 
 		let role = "";
+		let officeIds: string[] = [];
+		let currentOfficeId: string | null = null;
 		try {
-			role = await getMe(hub, 5_000);
+			const me = await getMeContext(hub, 5_000);
+			role = me.role;
+			officeIds = me.office_ids;
+			currentOfficeId = me.current_office_id;
 		} catch (e: unknown) {
 			console.error("/me failed: ", e);
 			throw error(502, AUTH_ERROR_DETAILS.userRoleLoadFailed);
@@ -244,6 +249,8 @@ export const GET: RequestHandler = async ({ url, cookies, locals }) => {
 			role,
 			name,
 			email,
+			office_ids: officeIds,
+			current_office_id: currentOfficeId,
 		})
 			.setProtectedHeader({ alg: "dir", enc: "A256GCM" })
 			.setIssuedAt()

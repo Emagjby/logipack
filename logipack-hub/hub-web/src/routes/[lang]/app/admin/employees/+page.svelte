@@ -2,6 +2,7 @@
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
+	import CopyIconButton from "$lib/components/app/CopyIconButton.svelte";
 
 	type EmployeeListRow = {
 		id: string;
@@ -21,6 +22,10 @@
 
 	let lang = $derived(page.params.lang || "en");
 	let employees = $derived(data.employees);
+
+	function compactId(value: string): string {
+		return `${value.slice(0, 8)}...`;
+	}
 
 	function openEmployee(id: string): void {
 		void goto(`/${lang}/app/admin/employees/${id}`);
@@ -84,7 +89,7 @@
 			</a>
 			<a
 				href={`/${lang}/app/admin`}
-				class="rounded-lg border border-surface-700 px-4 py-2 text-sm font-semibold text-surface-300 transition-colors hover:bg-surface-800"
+				class="rounded-lg border border-surface-700 px-4 py-2 text-sm font-semibold text-surface-200 transition-colors hover:bg-surface-800"
 			>
 				{$_("admin.employees.back")}
 			</a>
@@ -197,7 +202,17 @@
 								role="link"
 							>
 								<td class="px-5 py-3 text-sm text-accent">
-									<span class="font-mono">{employee.id}</span>
+									<div class="flex items-center gap-2">
+										<span class="font-mono"
+											>{compactId(employee.id)}</span
+										>
+									<CopyIconButton
+										value={employee.id}
+										title={$_("shipment.detail.copy_id")}
+										ariaLabel={$_("shipment.detail.copy_id")}
+										stopPropagation
+									/>
+									</div>
 								</td>
 								<td class="px-5 py-3 text-sm text-surface-50">
 									{userNameLabel(employee)}

@@ -200,6 +200,7 @@
 
     "shipment.viewer.title": "Детайли на пакет",
     "shipment.viewer.copy_json": "Копирай JSON",
+    "shipment.viewer.copy_strata": "Копирай Strata",
     "shipment.viewer.copied": "Копирано",
     "shipment.viewer.close": "Затвори",
     "shipment.viewer.payload": "Съдържание",
@@ -393,6 +394,7 @@
     "employee.shipments.new.loading_office": "Зареждане на офис...",
     "employee.shipments.new.office_not_available": "Няма данни",
     "employee.shipments.new.office_required": "Трябва да сте назначени към офис, за да създадете пратка.",
+    "employee.shipments.new.submit_failed": "Неуспешно създаване на пратка. Опитайте отново.",
 
     "admin.shipments.detail.headline": "Детайли за пратка",
     "admin.shipments.detail.viewing": "Преглед на пратка: {id}",
@@ -524,5 +526,21 @@
     "profile.not_assigned": "Не е назначен",
     "profile.copy": "Копирай",
     "profile.copied": "Копирано",
-    "profile.preferences.language_help": "Промяната на езика се прилага веднага."
+    "profile.preferences.language_help": "Промяната на езика се прилага веднага.",
+
+    "shipment.update.title": "Промяна на статус",
+    "shipment.update.new_status": "Нов статус",
+    "shipment.update.select_status": "Изберете статус",
+    "shipment.update.office": "Прехвърли към офис",
+    "shipment.update.office_placeholder": "ID на офис (по избор)",
+    "shipment.update.office_hint": "Задължително при преход към В транзит.",
+    "shipment.update.notes": "Бележки",
+    "shipment.update.notes_placeholder": "Незадължителна бележка...",
+    "shipment.update.submit": "Обнови",
+    "shipment.update.submitting": "Обновяване...",
+    "shipment.update.success": "Статусът е обновен успешно.",
+    "shipment.update.failed": "Неуспешно обновяване на статуса. Моля, опитайте отново.",
+    "shipment.update.invalid_status": "Моля, изберете валиден статус.",
+    "shipment.update.office_required": "Офисът е задължителен при преход към В транзит.",
+    "shipment.update.terminal_hint": "Тази пратка е в крайно състояние и не може да бъде обновена."
 }

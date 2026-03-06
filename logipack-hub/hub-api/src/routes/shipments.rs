@@ -37,12 +37,12 @@ pub fn router() -> Router<AppState> {
 /// List all shipments
 async fn list_shipments(
     State(state): State<AppState>,
-    _actor: ActorContext,
+    actor: ActorContext,
 ) -> Result<Json<Vec<ShipmentListItem>>, ApiError> {
-    policy::require_employee(&_actor)
+    policy::require_employee(&actor)
         .map_err(|_| ApiError::forbidden("access_denied", "Access denied"))?;
 
-    let rows = shipments_list::list_shipments(&state.db).await?;
+    let rows = shipments_list::list_shipments(&state.db, &actor).await?;
     let result = rows.into_iter().map(ShipmentListItem::from).collect();
     Ok(Json(result))
 }
@@ -51,15 +51,15 @@ async fn list_shipments(
 async fn get_shipment(
     Path(id): Path<String>,
     State(state): State<AppState>,
-    _actor: ActorContext,
+    actor: ActorContext,
 ) -> Result<Json<ShipmentDetail>, ApiError> {
-    policy::require_employee(&_actor)
+    policy::require_employee(&actor)
         .map_err(|_| ApiError::forbidden("access_denied", "Access denied"))?;
 
     let shipment_id = id
         .parse()
         .map_err(|_e| ApiError::bad_request("invalid_shipment_id", "Invalid shipment id"))?;
-    let row = shipments_get::get_shipment(&state.db, shipment_id).await?;
+    let row = shipments_get::get_shipment(&state.db, &actor, shipment_id).await?;
     let result = ShipmentDetail::from(row);
     Ok(Json(result))
 }
@@ -91,7 +91,7 @@ async fn change_status_handler(
     State(state): State<AppState>,
     actor: ActorContext,
     Json(req): Json<ChangeStatusRequest>,
-) -> Result<(), ApiError> {
+) -> Result<axum::http::StatusCode, ApiError> {
     policy::require_employee(&actor)
         .map_err(|_| ApiError::forbidden("access_denied", "Access denied"))?;
 
@@ -107,7 +107,7 @@ async fn change_status_handler(
     )
     .await?;
 
-    Ok(())
+    Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 async fn get_timeline_handler(
@@ -118,8 +118,16 @@ async fn get_timeline_handler(
     policy::require_employee(&actor)
         .map_err(|_| ApiError::forbidden("access_denied", "Access denied"))?;
 
+    let _ = shipments_get::get_shipment(&state.db, &actor, id).await?;
+
     let rows = read_timeline(&state.db, id).await?;
-    let result = rows.into_iter().map(TimelineItem::from).collect();
+    let result = rows
+        .into_iter()
+        .filter(|event| {
+            !(event.seq == 1 && event.event_type.trim().eq_ignore_ascii_case("shipment"))
+        })
+        .map(TimelineItem::from)
+        .collect();
 
     Ok(Json(result))
 }

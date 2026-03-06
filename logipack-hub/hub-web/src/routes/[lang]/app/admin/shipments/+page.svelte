@@ -4,6 +4,7 @@
 	import { page } from "$app/state";
 	import { _ } from "svelte-i18n";
 	import ShipmentStatusBadge from "$lib/components/app/ShipmentStatusBadge.svelte";
+	import CopyIconButton from "$lib/components/app/CopyIconButton.svelte";
 	import {
 		SHIPMENT_STATUSES,
 		isKnownStatus,
@@ -29,8 +30,15 @@
 	let shipments = $derived(
 		data.result.state === "ok" ? data.result.shipments : [],
 	);
+	let officeLabelById = $derived(
+		new Map(
+			((data as { offices?: { id: string; name: string }[] }).offices ?? [])
+				.filter((office) => Boolean(office?.id))
+				.map((office) => [office.id, office.name] as const),
+		),
+	);
 	let offices = $derived(
-		[...new Set(shipments.map((shipment) => shipment.office))].sort(
+		[...new Set(shipments.map((shipment) => displayOffice(shipment.office)))].sort(
 			(a, b) => a.localeCompare(b),
 		),
 	);
@@ -48,18 +56,27 @@
 	);
 	let filtered = $derived(
 		shipments.filter((shipment) => {
+			const shipmentOffice = displayOffice(shipment.office);
 			const matchesSearch =
 				!searchQuery ||
 				shipment.id.toLowerCase().includes(searchQuery) ||
-				shipment.office.toLowerCase().includes(searchQuery);
+				shipmentOffice.toLowerCase().includes(searchQuery);
 			const matchesOffice =
-				!appliedOffice || shipment.office === appliedOffice;
+				!appliedOffice || shipmentOffice === appliedOffice;
 			const matchesStatus =
 				appliedStatuses.length === 0 ||
-				appliedStatuses.includes(shipment.status);
+				(appliedStatuses as readonly string[]).includes(shipment.status);
 			return matchesSearch && matchesOffice && matchesStatus;
 		}),
 	);
+
+	function compactId(value: string): string {
+		return `${value.slice(0, 8)}...`;
+	}
+
+	function displayOffice(office: string): string {
+		return officeLabelById.get(office) ?? office;
+	}
 
 	$effect(() => {
 		if (!browser) return;
@@ -81,15 +98,15 @@
 	function parseStatusParam(raw: string | null): ShipmentStatus[] {
 		if (!raw) return [];
 
-		const selected = new Set<ShipmentStatus>();
+		const selected: ShipmentStatus[] = [];
 		for (const token of raw.split(",")) {
 			const normalized = token.trim().toLowerCase();
-			if (isKnownStatus(normalized)) {
-				selected.add(normalized);
+			if (isKnownStatus(normalized) && !selected.includes(normalized)) {
+				selected.push(normalized);
 			}
 		}
 
-		return SHIPMENT_STATUSES.filter((status) => selected.has(status));
+		return SHIPMENT_STATUSES.filter((status) => selected.includes(status));
 	}
 
 	function formatUpdated(iso: string): string {
@@ -218,14 +235,16 @@
 	}
 
 	function toggleDraftStatus(status: ShipmentStatus): void {
-		const selected = new Set(draftStatuses);
-		if (selected.has(status)) {
-			selected.delete(status);
+		const selected = [...draftStatuses];
+		if (selected.includes(status)) {
+			draftStatuses = selected.filter((item) => item !== status);
 		} else {
-			selected.add(status);
+			draftStatuses = [...selected, status];
 		}
 
-		draftStatuses = SHIPMENT_STATUSES.filter((item) => selected.has(item));
+		draftStatuses = SHIPMENT_STATUSES.filter((item) =>
+			draftStatuses.includes(item),
+		);
 	}
 
 	async function applyFilters(): Promise<void> {
@@ -465,21 +484,27 @@
 									tabindex="0"
 									role="link"
 								>
-									<td class="px-5 py-3 text-sm text-accent">
-										<span class="font-mono"
-											>{shipment.id}</span
-										>
-									</td>
+							<td class="px-5 py-3 text-sm text-accent">
+								<div class="flex items-center gap-2">
+									<span class="font-mono">{compactId(shipment.id)}</span>
+									<CopyIconButton
+										value={shipment.id}
+										title={$_("shipments.copy_id")}
+										ariaLabel={$_("shipments.copy_id")}
+										stopPropagation
+									/>
+								</div>
+							</td>
 									<td class="px-5 py-3">
 										<ShipmentStatusBadge
 											status={shipment.status}
 										/>
 									</td>
-									<td
-										class="px-5 py-3 text-sm text-surface-200"
-									>
-										{shipment.office}
-									</td>
+							<td
+								class="px-5 py-3 text-sm text-surface-200"
+							>
+								{displayOffice(shipment.office)}
+							</td>
 									<td
 										class="px-5 py-3 text-sm text-surface-400"
 									>

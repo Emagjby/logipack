@@ -35,14 +35,12 @@ fn normalize_private_key(private_pem: &str) -> Vec<u8> {
 }
 
 pub async fn seed_auth0_user(db: &DatabaseConnection, auth0_sub: &str) {
-    use core_data::entity::{roles, user_roles, users};
+    use core_data::entity::{employees, roles, user_roles, users};
     use sea_orm::sqlx::types::chrono;
-    use sea_orm::{ActiveModelTrait, Set};
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
     use uuid::Uuid;
 
     let user_id = Uuid::new_v4();
-    let role_id = Uuid::new_v4();
-
     users::ActiveModel {
         id: Set(user_id),
         name: Set("Test User".into()),
@@ -55,17 +53,48 @@ pub async fn seed_auth0_user(db: &DatabaseConnection, auth0_sub: &str) {
     .await
     .unwrap();
 
-    roles::ActiveModel {
-        id: Set(role_id),
-        name: Set("admin".into()),
+    let role = match roles::Entity::find()
+        .filter(roles::Column::Name.eq("admin"))
+        .one(db)
+        .await
+        .unwrap()
+    {
+        Some(r) => r,
+        None => {
+            let role_id = Uuid::new_v4();
+            match (roles::ActiveModel {
+                id: Set(role_id),
+                name: Set("admin".into()),
+            })
+            .insert(db)
+            .await
+            {
+                Ok(r) => r,
+                Err(_) => roles::Entity::find()
+                    .filter(roles::Column::Name.eq("admin"))
+                    .one(db)
+                    .await
+                    .unwrap()
+                    .expect("admin role should exist"),
+            }
+        }
+    };
+
+    user_roles::ActiveModel {
+        user_id: Set(user_id),
+        role_id: Set(role.id),
     }
     .insert(db)
     .await
     .unwrap();
 
-    user_roles::ActiveModel {
+    let employee_id = Uuid::new_v4();
+    employees::ActiveModel {
+        id: Set(employee_id),
         user_id: Set(user_id),
-        role_id: Set(role_id),
+        created_at: Set(chrono::Utc::now().into()),
+        updated_at: Set(chrono::Utc::now().into()),
+        deleted_at: Set(None),
     }
     .insert(db)
     .await
@@ -189,7 +218,7 @@ pub async fn setup_auth0_app_with_db() -> (Router, DatabaseConnection) {
 }
 
 pub async fn setup_app_with_employee() -> (Router, ActorContext) {
-    use core_data::entity::{roles, users};
+    use core_data::entity::{employees, roles, users};
     use sea_orm::sqlx::types::chrono;
     use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
     use uuid::Uuid;
@@ -198,10 +227,11 @@ pub async fn setup_app_with_employee() -> (Router, ActorContext) {
     cleanup_db(&db).await;
 
     let user_id = Uuid::new_v4();
+    let email = format!("nobody+{}@test.com", user_id);
     users::ActiveModel {
         id: Set(user_id),
         name: Set("Test User".into()),
-        email: Set(Some("nobody@test.com".to_string())),
+        email: Set(Some(email.clone())),
         password_hash: Set(Some("x".into())),
         auth0_sub: Set(None),
         created_at: Set(chrono::Utc::now().into()),
@@ -219,13 +249,21 @@ pub async fn setup_app_with_employee() -> (Router, ActorContext) {
         Some(r) => r,
         None => {
             let role_id = Uuid::new_v4();
-            roles::ActiveModel {
+            match (roles::ActiveModel {
                 id: Set(role_id),
                 name: Set("employee".into()),
-            }
+            })
             .insert(&db)
             .await
-            .unwrap()
+            {
+                Ok(r) => r,
+                Err(_) => roles::Entity::find()
+                    .filter(roles::Column::Name.eq("employee"))
+                    .one(&db)
+                    .await
+                    .unwrap()
+                    .expect("employee role should exist"),
+            }
         }
     };
 
@@ -238,11 +276,22 @@ pub async fn setup_app_with_employee() -> (Router, ActorContext) {
     .await
     .unwrap();
 
+    let employee_model = employees::ActiveModel {
+        id: Set(Uuid::new_v4()),
+        user_id: Set(user_id),
+        created_at: Set(chrono::Utc::now().into()),
+        updated_at: Set(chrono::Utc::now().into()),
+        deleted_at: Set(None),
+    }
+    .insert(&db)
+    .await
+    .unwrap();
+
     let employee = ActorContext {
         user_id,
-        sub: "nobody@test.com".to_string(),
+        sub: email,
         roles: vec![Role::Employee],
-        employee_id: None,
+        employee_id: Some(employee_model.id),
         allowed_office_ids: vec![],
     };
 

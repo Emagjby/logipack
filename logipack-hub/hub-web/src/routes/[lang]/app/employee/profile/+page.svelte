@@ -3,12 +3,10 @@
 	import type { PageData } from "./$types";
 	import { _ } from "svelte-i18n";
 	import LanguageFlagDropdown from "$lib/components/app/LanguageFlagDropdown.svelte";
+	import CopyIconButton from "$lib/components/app/CopyIconButton.svelte";
 
 	let { data }: { data: PageData } = $props();
 
-	type CopyField = "email" | "userId";
-
-	let copiedField = $state<CopyField | null>(null);
 	let lang = $derived(data.pathname.split("/")[1] || "en");
 	let notAssigned = $derived($_("profile.not_assigned"));
 
@@ -24,23 +22,6 @@
 
 		return `${officeName} (${office.id})`;
 	});
-
-	async function copyValue(
-		value: string | null,
-		field: CopyField,
-	): Promise<void> {
-		if (!browser || !value) return;
-
-		try {
-			await navigator.clipboard.writeText(value);
-			copiedField = field;
-			window.setTimeout(() => {
-				if (copiedField === field) copiedField = null;
-			}, 1100);
-		} catch {
-			// Clipboard can be unavailable in restricted contexts.
-		}
-	}
 
 	function logout(): void {
 		window.location.href = "/logout";
@@ -105,16 +86,13 @@
 				<dd class="min-w-0 truncate text-sm text-surface-200">
 					{data.profile.email ?? notAssigned}
 				</dd>
-				<button
-					type="button"
-					class="inline-flex cursor-pointer items-center rounded-md border border-surface-700 px-2 py-1 text-[11px] font-medium text-surface-400 transition-colors hover:bg-surface-800 disabled:cursor-not-allowed disabled:opacity-60"
-					onclick={() => copyValue(data.profile.email, "email")}
-					disabled={!data.profile.email}
-				>
-					{copiedField === "email"
-						? $_("profile.copied")
-						: $_("profile.copy")}
-				</button>
+				<CopyIconButton
+					value={data.profile.email ?? ""}
+					title={$_("profile.copy")}
+					ariaLabel={`${$_("profile.copy")} ${$_("profile.field.email")}`}
+					disabled={!browser || !data.profile.email}
+					class="border border-surface-700"
+				/>
 			</div>
 
 			<div
@@ -128,16 +106,13 @@
 				<dd class="min-w-0 truncate font-mono text-sm text-surface-200">
 					{data.profile.userId ?? notAssigned}
 				</dd>
-				<button
-					type="button"
-					class="inline-flex cursor-pointer items-center rounded-md border border-surface-700 px-2 py-1 text-[11px] font-medium text-surface-400 transition-colors hover:bg-surface-800 disabled:cursor-not-allowed disabled:opacity-60"
-					onclick={() => copyValue(data.profile.userId, "userId")}
-					disabled={!data.profile.userId}
-				>
-					{copiedField === "userId"
-						? $_("profile.copied")
-						: $_("profile.copy")}
-				</button>
+				<CopyIconButton
+					value={data.profile.userId ?? ""}
+					title={$_("profile.copy")}
+					ariaLabel={`${$_("profile.copy")} ${$_("profile.field.user_id")}`}
+					disabled={!browser || !data.profile.userId}
+					class="border border-surface-700"
+				/>
 			</div>
 
 			<div

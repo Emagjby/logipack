@@ -14,12 +14,20 @@ pub enum TransitionError {
         to: ShipmentStatus,
     },
 
-    /// Office change is not allowed when transitioning to IN_TRANSIT.
+    /// Office change is not allowed unless transitioning to IN_TRANSIT.
     #[error("office hop not allowed from {from} to {to}")]
     OfficeHopNotAllowed {
         from: ShipmentStatus,
         to: ShipmentStatus,
     },
+
+    /// Office change requires a current office.
+    #[error("office hop requires current office for transition to {to}")]
+    OfficeHopRequiresCurrentOffice { to: ShipmentStatus },
+
+    /// Certain statuses require a target office when no current office exists.
+    #[error("office required for transition to {to}")]
+    OfficeRequiredForStatus { to: ShipmentStatus },
 }
 
 #[cfg(test)]

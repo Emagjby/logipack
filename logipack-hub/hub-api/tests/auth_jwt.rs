@@ -5,7 +5,11 @@ use jsonwebtoken::Header;
 use serde_json::json;
 use tower::ServiceExt;
 
-use crate::helpers::{seed_auth0_user, setup_auth0_app, setup_auth0_app_with_db, sign_test_jwt};
+use crate::helpers::{
+    seed_auth0_user, seed_office, setup_auth0_app, setup_auth0_app_with_db, sign_test_jwt,
+};
+use core_data::entity::employee_offices;
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 #[allow(dead_code)]
 pub mod helpers;
@@ -39,6 +43,66 @@ async fn auth0_valid_token_allows_request() {
         .unwrap();
 
     assert_eq!(res.status(), axum::http::StatusCode::OK);
+}
+
+#[tokio::test]
+async fn me_returns_employee_office_context() {
+    let (app, db) = setup_auth0_app_with_db().await;
+
+    let sub = "user|me-office";
+    seed_auth0_user(&db, sub).await;
+
+    let office_id = seed_office(&db).await;
+    let user = core_data::entity::users::Entity::find()
+        .filter(core_data::entity::users::Column::Auth0Sub.eq(Some(sub.to_string())))
+        .one(&db)
+        .await
+        .unwrap()
+        .expect("user for sub should exist");
+
+    let employee = core_data::entity::employees::Entity::find()
+        .filter(core_data::entity::employees::Column::UserId.eq(user.id))
+        .one(&db)
+        .await
+        .unwrap()
+        .expect("employee for sub should exist");
+
+    employee_offices::ActiveModel {
+        employee_id: Set(employee.id),
+        office_id: Set(office_id),
+    }
+    .insert(&db)
+    .await
+    .unwrap();
+
+    let private = env::var("TEST_AUTH0_PRIVATE_PEM").unwrap();
+    let token = sign_test_jwt(
+        "vPGrStQtI1pBCs8y+UqMe7vR/S90cOiQQJy3BKyEnJI=",
+        "https://test/",
+        "logipack",
+        sub,
+        &private,
+    );
+
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/me")
+                .header("Authorization", format!("Bearer {}", token))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), axum::http::StatusCode::OK);
+    let body = axum::body::to_bytes(res.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json["role"], "admin");
+    assert!(json["office_ids"].as_array().is_some());
+    assert_eq!(json["current_office_id"], office_id.to_string());
 }
 
 #[tokio::test]

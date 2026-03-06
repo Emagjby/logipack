@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ActionData } from "./$types";
 	import { page } from "$app/state";
-	import { onDestroy } from "svelte";
 	import { _ } from "svelte-i18n";
 	import type { EmployeeDetail } from "$lib/server/hubApi/mappers/employees";
+	import CopyIconButton from "$lib/components/app/CopyIconButton.svelte";
 
 	type EmployeeDetailResult =
 		| ({ state: "ok" } & EmployeeDetail)
@@ -24,29 +24,7 @@
 
 	let lang = $derived(page.params.lang || "en");
 	let employeeId = $derived(page.params.id || "");
-	let copiedId = $state(false);
-	let copyTimer = $state<ReturnType<typeof setTimeout> | null>(null);
 	let submitError = $derived(form?.submitError ?? null);
-
-	onDestroy(() => {
-		if (copyTimer) {
-			clearTimeout(copyTimer);
-		}
-	});
-
-	async function copyId(id: string): Promise<void> {
-		try {
-			await navigator.clipboard.writeText(id);
-			copiedId = true;
-			if (copyTimer) clearTimeout(copyTimer);
-			copyTimer = setTimeout(() => {
-				copiedId = false;
-				copyTimer = null;
-			}, 1200);
-		} catch {
-			// Ignore clipboard errors.
-		}
-	}
 
 	function confirmDelete(event: SubmitEvent): void {
 		if (!confirm($_("admin.employees.detail.delete_confirm"))) {
@@ -227,36 +205,12 @@
 				</dt>
 				<dd class="mt-1 flex items-center gap-2 text-sm">
 					<span class="font-mono text-accent">{employee.id}</span>
-					<button
-						type="button"
-						onclick={() => copyId(employee.id)}
-						class="cursor-pointer rounded-md bg-surface-800 px-1.5 py-1 text-[0.62rem] font-medium text-accent transition-colors hover:bg-surface-700"
+					<CopyIconButton
+						value={employee.id}
 						title={$_("admin.offices.copy_id")}
-						aria-label={$_("admin.offices.copy_id")}
-					>
-						{#if copiedId}
-							{$_("admin.offices.copied")}
-						{:else}
-							<svg
-								class="h-3.5 w-3.5 text-accent"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<rect
-									x="9"
-									y="9"
-									width="11"
-									height="11"
-									rx="2"
-								/>
-								<path
-									d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-								/>
-							</svg>
-						{/if}
-					</button>
+						ariaLabel={$_("admin.offices.copy_id")}
+						class="text-accent"
+					/>
 				</dd>
 			</div>
 

@@ -4,6 +4,7 @@
 	import { goto, invalidateAll } from "$app/navigation";
 	import { _ } from "svelte-i18n";
 	import ShipmentStatusBadge from "$lib/components/app/ShipmentStatusBadge.svelte";
+	import CopyIconButton from "$lib/components/app/CopyIconButton.svelte";
 	import {
 		isKnownStatus,
 		statusLabelKey,
@@ -13,11 +14,17 @@
 	let { data }: { data: PageData } = $props();
 
 	let lang = $derived(data.pathname.split("/")[1] || "en");
-	let copiedId = $state<string | null>(null);
 	let isRefreshing = $state(false);
 	let filtersOpen = $state(false);
 
 	let shipments = $derived(data.result.shipments);
+	let officeLabelById = $derived(
+		new Map(
+			((data as { offices?: { id: string; name: string }[] }).offices ?? [])
+				.filter((office) => Boolean(office?.id))
+				.map((office) => [office.id, office.name] as const),
+		),
+	);
 	let rawQuery = $derived(page.url.searchParams.get("q")?.trim() ?? "");
 	let searchQuery = $derived(rawQuery.toLowerCase());
 	let rawStatusFilter = $derived(
@@ -43,15 +50,24 @@
 
 	let filtered = $derived(
 		shipments.filter((s) => {
+			const shipmentOffice = displayOffice(s.office);
 			const matchesSearch =
 				!searchQuery ||
 				s.id.toLowerCase().includes(searchQuery) ||
-				s.office.toLowerCase().includes(searchQuery);
+				shipmentOffice.toLowerCase().includes(searchQuery);
 			const matchesStatus =
 				statusFilter === "all" || s.status === statusFilter;
 			return matchesSearch && matchesStatus;
 		}),
 	);
+
+	function compactId(value: string): string {
+		return `${value.slice(0, 8)}...`;
+	}
+
+	function displayOffice(office: string): string {
+		return officeLabelById.get(office) ?? office;
+	}
 
 	function formatUpdated(iso: string): string {
 		const dt = new Date(iso);
@@ -63,18 +79,6 @@
 			minute: "2-digit",
 			hour12: false,
 		});
-	}
-
-	async function copyShipmentId(id: string) {
-		try {
-			await navigator.clipboard.writeText(id);
-			copiedId = id;
-			setTimeout(() => {
-				if (copiedId === id) copiedId = null;
-			}, 1200);
-		} catch {
-			// Ignore clipboard errors (e.g. permissions).
-		}
 	}
 
 	async function handleRefresh() {
@@ -376,41 +380,14 @@
 								<td class="px-5 py-3 text-sm text-accent">
 									<div class="flex items-center gap-2">
 										<span class="font-mono"
-											>{shipment.id}</span
+											>{compactId(shipment.id)}</span
 										>
-										<button
-											type="button"
-											onclick={(e) => {
-												e.stopPropagation();
-												copyShipmentId(shipment.id);
-											}}
-											class="rounded-md bg-surface-800 px-1.5 py-1 text-[11px] font-medium text-surface-400 transition-colors hover:bg-surface-700"
+										<CopyIconButton
+											value={shipment.id}
 											title={$_("shipments.copy_id")}
-											aria-label={$_("shipments.copy_id")}
-										>
-											{#if copiedId === shipment.id}
-												{$_("shipments.copied")}
-											{:else}
-												<svg
-													class="h-3.5 w-3.5"
-													fill="none"
-													viewBox="0 0 24 24"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<rect
-														x="9"
-														y="9"
-														width="11"
-														height="11"
-														rx="2"
-													/>
-													<path
-														d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-													/>
-												</svg>
-											{/if}
-										</button>
+											ariaLabel={$_("shipments.copy_id")}
+											stopPropagation
+										/>
 									</div>
 								</td>
 								<td class="px-5 py-3">
@@ -419,7 +396,7 @@
 									/>
 								</td>
 								<td class="px-5 py-3 text-sm text-surface-200">
-									{shipment.office}
+									{displayOffice(shipment.office)}
 								</td>
 								<td class="px-5 py-3 text-sm text-surface-400">
 									{formatUpdated(shipment.updatedAt)}
