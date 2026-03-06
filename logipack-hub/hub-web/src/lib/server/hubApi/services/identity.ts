@@ -1,5 +1,10 @@
 import type { EnsureUserRequestDto, MeResponseDto } from "../dto/identity";
-import { mapMeRole, type LpRole } from "../mappers/identity";
+import {
+	mapMeContext,
+	mapMeRole,
+	type LpRole,
+	type MeContext,
+} from "../mappers/identity";
 import { HubApiError } from "../errors";
 import type { HubApiClient } from "../index";
 
@@ -30,6 +35,21 @@ export async function getMe(
 	} catch (e) {
 		if (e instanceof HubApiError && e.status === 404) {
 			return "";
+		}
+		throw e;
+	}
+}
+
+export async function getMeContext(
+	client: HubApiClient,
+	timeoutMs = 5_000,
+): Promise<MeContext> {
+	try {
+		const res = await client.get<MeResponseDto>("/me", { timeoutMs });
+		return mapMeContext(res.data);
+	} catch (e) {
+		if (e instanceof HubApiError && e.status === 404) {
+			return { role: "", office_ids: [], current_office_id: null };
 		}
 		throw e;
 	}

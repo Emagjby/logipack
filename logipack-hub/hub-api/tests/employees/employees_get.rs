@@ -1,8 +1,10 @@
 use axum::{body::Body, extract::Request, http::StatusCode};
 use http_body_util::BodyExt;
+use sea_orm::{ActiveModelTrait, Set};
 use tower::ServiceExt;
 use uuid::Uuid;
 
+use core_data::entity::employee_offices;
 use hub_api::dto::employees::GetEmployeeResponse;
 
 use crate::helpers::{
@@ -13,6 +15,15 @@ use crate::helpers::{
 async fn admin_can_get_employee() {
     let (app, db, admin) = setup_app_with_admin().await;
     let employee_id = seed_employee_record(&db).await;
+    let office_id = crate::helpers::seed_office(&db).await;
+
+    employee_offices::ActiveModel {
+        employee_id: Set(employee_id),
+        office_id: Set(office_id),
+    }
+    .insert(&db)
+    .await
+    .unwrap();
 
     let res = app
         .oneshot(
@@ -32,6 +43,7 @@ async fn admin_can_get_employee() {
     let body: GetEmployeeResponse = serde_json::from_slice(&body).unwrap();
 
     assert_eq!(body.employee.id, employee_id.to_string());
+    assert_eq!(body.employee.offices.as_ref().map(Vec::len), Some(1));
 }
 
 #[tokio::test]

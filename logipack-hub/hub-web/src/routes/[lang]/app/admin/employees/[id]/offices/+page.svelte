@@ -49,13 +49,14 @@
 	let lang = $derived(page.params.lang || "en");
 	let employeeId = $derived(page.params.id || "");
 	let submitting = $state(false);
-	const selectedOfficeId = "";
+	let selectedOfficeId = $derived(form?.values?.office_id ?? "");
 
 	const enhanceSubmit = () => {
 		submitting = true;
 		return async ({ update }: { update: () => Promise<void> }) => {
 			try {
 				await update();
+				window.location.reload();
 			} finally {
 				submitting = false;
 			}
@@ -70,7 +71,9 @@
 		full_name: string;
 		user_id: string;
 	}): string {
-		return employee.user_display_name ?? employee.full_name ?? employee.user_id;
+		return (
+			employee.user_display_name ?? employee.full_name ?? employee.user_id
+		);
 	}
 
 	function officeLabel(office: { name: string; city: string }): string {
@@ -114,7 +117,7 @@
 			</a>
 			<a
 				href={`/${lang}/app/admin/employees/${employeeId}`}
-				class="rounded-lg border border-surface-700 px-4 py-2 text-sm font-semibold text-surface-300 transition-colors hover:bg-surface-800"
+				class="rounded-lg border border-surface-700 px-4 py-2 text-sm font-semibold text-surface-200 transition-colors hover:bg-surface-800"
 			>
 				{$_("admin.employees.offices.back_to_employee")}
 			</a>

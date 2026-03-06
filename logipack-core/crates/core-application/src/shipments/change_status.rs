@@ -55,18 +55,28 @@ pub async fn change_status(
         }
     }
 
-    // office hop policy for employees
+    // employees may route IN_TRANSIT shipments to any destination office.
+    // For other statuses, destination office must remain within employee scope.
     if !actor.is_admin()
+        && input.to_status != ShipmentStatus::InTransit
         && let Some(to_office) = input.to_office_id
         && !actor.allowed_office_ids.contains(&to_office)
     {
         return Err(ChangeStatusError::Forbidden);
     }
 
-    let office_changed = input.to_office_id != current_office;
+    let office_changed = input.to_office_id.is_some() && input.to_office_id != current_office;
+    let has_current_office = current_office.is_some();
+    let has_target_office = input.to_office_id.is_some();
 
-    validate_transition(from_status, input.to_status, office_changed)
-        .map_err(ChangeStatusError::Domain)?;
+    validate_transition(
+        from_status,
+        input.to_status,
+        office_changed,
+        has_current_office,
+        has_target_office,
+    )
+    .map_err(ChangeStatusError::Domain)?;
 
     // projection trio
     core_eventstore::adapter::streams::ensure_stream(db, input.shipment_id, "shipment").await?;
@@ -117,7 +127,9 @@ pub async fn change_status(
 
     // snapshot update
     // only hop office when going to IN_TRANSIT
-    let new_office = if input.to_status == ShipmentStatus::InTransit {
+    let new_office = if input.to_status == ShipmentStatus::InTransit
+        || (from_status == ShipmentStatus::InTransit && input.to_status == ShipmentStatus::Accepted)
+    {
         input.to_office_id.or(current_office)
     } else {
         None // Keep old

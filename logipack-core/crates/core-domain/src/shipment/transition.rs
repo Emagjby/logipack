@@ -5,6 +5,8 @@ pub fn validate_transition(
     from: ShipmentStatus,
     to: ShipmentStatus,
     office_changed: bool,
+    has_current_office: bool,
+    has_target_office: bool,
 ) -> Result<(), TransitionError> {
     // Terminal states reject all
     if from.is_terminal() {
@@ -12,8 +14,22 @@ pub fn validate_transition(
     }
 
     // Office hop policy
-    if office_changed && to != ShipmentStatus::InTransit {
+    if office_changed
+        && !(to == ShipmentStatus::InTransit
+            || (from == ShipmentStatus::InTransit && to == ShipmentStatus::Accepted))
+    {
         return Err(TransitionError::OfficeHopNotAllowed { from, to });
+    }
+
+    if office_changed && !has_current_office {
+        return Err(TransitionError::OfficeHopRequiresCurrentOffice { to });
+    }
+
+    if !has_current_office
+        && !has_target_office
+        && matches!(to, ShipmentStatus::Accepted | ShipmentStatus::Processed)
+    {
+        return Err(TransitionError::OfficeRequiredForStatus { to });
     }
 
     use ShipmentStatus::*;
@@ -24,6 +40,7 @@ pub fn validate_transition(
         (New, Accepted)
             | (Accepted, Processed)
             | (Processed, InTransit)
+            | (InTransit, Accepted)
             | (InTransit, Delivered)
             // cancellation
             | (New, Cancelled)
@@ -55,7 +72,7 @@ mod tests {
 
         for (from, to) in cases {
             assert!(
-                validate_transition(from, to, false).is_ok(),
+                validate_transition(from, to, false, true, false).is_ok(),
                 "expected {:?} -> {:?} to be allowed",
                 from,
                 to
@@ -69,7 +86,7 @@ mod tests {
 
         for from in cases {
             assert!(
-                validate_transition(from, Cancelled, false).is_ok(),
+                validate_transition(from, Cancelled, false, true, false).is_ok(),
                 "expected {:?} -> Cancelled to be allowed",
                 from
             )
@@ -81,7 +98,7 @@ mod tests {
         let cases = [Delivered, Cancelled];
 
         for from in cases {
-            let err = validate_transition(from, New, false).unwrap_err();
+            let err = validate_transition(from, New, false, true, false).unwrap_err();
             assert!(
                 matches!(err, TransitionError::TerminalState { .. }),
                 "expected terminal state error for {:?}",
@@ -100,7 +117,7 @@ mod tests {
         ];
 
         for (from, to) in cases {
-            let err = validate_transition(from, to, false).unwrap_err();
+            let err = validate_transition(from, to, false, true, false).unwrap_err();
             assert!(
                 matches!(err, TransitionError::InvalidTransition { .. }),
                 "expected invalid transition {:?} -> {:?}",
@@ -114,15 +131,41 @@ mod tests {
     fn office_hop_is_only_allowed_when_transitioning_to_in_transit() {
         // allowed:
         assert!(
-            validate_transition(Processed, InTransit, true).is_ok(),
+            validate_transition(Processed, InTransit, true, true, true).is_ok(),
             "office hop should be allowed when going to IN_TRANSIT"
         );
 
         // disallowed:
-        let err = validate_transition(New, Accepted, true).unwrap_err();
+        let err = validate_transition(New, Accepted, true, true, true).unwrap_err();
         assert!(
             matches!(err, TransitionError::OfficeHopNotAllowed { .. }),
             "office hop should be rejected outside IN_TRANSIT"
         )
+    }
+
+    #[test]
+    fn office_hop_requires_current_office() {
+        let err = validate_transition(Processed, InTransit, true, false, true).unwrap_err();
+        assert!(
+            matches!(err, TransitionError::OfficeHopRequiresCurrentOffice { .. }),
+            "office hop should require current office"
+        );
+    }
+
+    #[test]
+    fn office_hop_is_allowed_when_arriving_to_next_office() {
+        assert!(
+            validate_transition(InTransit, Accepted, true, true, true).is_ok(),
+            "office hop should be allowed when moving from IN_TRANSIT to ACCEPTED"
+        );
+    }
+
+    #[test]
+    fn accepted_requires_office_when_current_unknown() {
+        let err = validate_transition(New, Accepted, false, false, false).unwrap_err();
+        assert!(
+            matches!(err, TransitionError::OfficeRequiredForStatus { .. }),
+            "accepted should require an office when current office is unknown"
+        );
     }
 }

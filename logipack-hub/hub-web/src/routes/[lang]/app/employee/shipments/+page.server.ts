@@ -1,3 +1,6 @@
+import { HUB_API_BASE } from "$env/static/private";
+import { createHubApiClient, HubApiError } from "$lib/server/hubApi";
+import { listShipments } from "$lib/server/hubApi/services/shipments";
 import type { PageServerLoad } from "./$types";
 import { error } from "@sveltejs/kit";
 import type { ShipmentRow } from "$lib/domain/shipmentStatus";
@@ -8,76 +11,7 @@ type ShipmentsResult =
 	| { state: "empty"; shipments: [] }
 	| { state: "error"; shipments: []; message: string };
 
-/**
- * TODO: Replace with real hub-api call once the endpoint exists.
- *
- * Expected endpoint: GET {HUB_API_BASE}/shipments
- * Headers:           Authorization: Bearer <accessToken>
- * Response shape:    { shipments: ShipmentRow[] }
- *
- * The access token lives in the encrypted session cookie.
- * See `src/routes/callback/+server.ts` for the existing fetch pattern
- * using `HUB_API_BASE` from `$env/static/private`.
- */
-async function fetchShipments(): Promise<ShipmentsResult> {
-	// ── Mock data (structured like real API response) ────────────
-	const mock: ShipmentRow[] = [
-		{
-			id: "SHP-1042",
-			status: "in_transit",
-			office: "Sofia HQ",
-			updatedAt: new Date(Date.now() - 2 * 60_000).toISOString(),
-		},
-		{
-			id: "SHP-1041",
-			status: "delivered",
-			office: "Plovdiv DC",
-			updatedAt: new Date(Date.now() - 18 * 60_000).toISOString(),
-		},
-		{
-			id: "SHP-1040",
-			status: "pending",
-			office: "Varna Port",
-			updatedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
-		},
-		{
-			id: "SHP-1039",
-			status: "in_transit",
-			office: "Veliko Tarnovo Office",
-			updatedAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
-		},
-		{
-			id: "SHP-1038",
-			status: "delivered",
-			office: "Sofia HQ",
-			updatedAt: new Date(Date.now() - 5 * 3_600_000).toISOString(),
-		},
-		{
-			id: "SHP-1037",
-			status: "cancelled",
-			office: "Plovdiv DC",
-			updatedAt: new Date(Date.now() - 8 * 3_600_000).toISOString(),
-		},
-		{
-			id: "SHP-1036",
-			status: "new",
-			office: "Varna Port",
-			updatedAt: new Date(Date.now() - 12 * 3_600_000).toISOString(),
-		},
-		{
-			id: "SHP-1035",
-			status: "accepted",
-			office: "Sofia HQ",
-			updatedAt: new Date(Date.now() - 24 * 3_600_000).toISOString(),
-		},
-	];
-
-	return mock.length > 0
-		? { state: "ok", shipments: mock }
-		: { state: "empty", shipments: [] };
-}
-
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ parent, fetch, locals }) => {
 	const { session } = await parent();
 	const activeOffice = "Sofia HQ";
 
@@ -87,15 +21,40 @@ export const load: PageServerLoad = async ({ parent }) => {
 	}
 
 	try {
-		const result = await fetchShipments();
-		return { result, activeOffice };
+		const client = createHubApiClient({
+			fetch,
+			locals,
+			baseUrl: HUB_API_BASE,
+		});
+
+		const shipments = await listShipments(client);
+
+		const result: ShipmentsResult =
+			shipments.length > 0
+				? { state: "ok", shipments }
+				: { state: "empty", shipments: [] };
+
+		return { result, activeOffice, offices: [] };
 	} catch (e) {
+		if (e instanceof HubApiError) {
+			console.error("employee.shipments.list failed", {
+				status: e.status,
+				code: e.code,
+				message: e.message,
+				upstream: e.upstream,
+			});
+		} else {
+			console.error("employee.shipments.list failed", e);
+		}
+
 		return {
 			activeOffice,
+			offices: [],
 			result: {
 				state: "error" as const,
 				shipments: [] as [],
-				message: e instanceof Error ? e.message : "Unknown error",
+				message:
+					e instanceof Error ? e.message : "shipments.error.generic",
 			},
 		};
 	}

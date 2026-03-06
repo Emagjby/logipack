@@ -116,3 +116,11 @@ async fn resolve_actor(
         allowed_office_ids,
     })
 }
+
+pub async fn resolve_actor_for_me(
+    db: &DatabaseConnection,
+    auth_mode: AuthMode,
+    sub: &str,
+) -> anyhow::Result<ActorContext> {
+    resolve_actor(db, auth_mode, sub).await
+}

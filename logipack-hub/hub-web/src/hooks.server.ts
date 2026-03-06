@@ -179,6 +179,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 						expires_at: newExpiresAt,
 						id_token: refreshed.id_token ?? session.id_token,
 						refresh_token: refreshed.refresh_token ?? session.refresh_token,
+						office_ids: session.office_ids,
+						current_office_id: session.current_office_id,
 					};
 
 					const parsed = parseSession(nextPayload);

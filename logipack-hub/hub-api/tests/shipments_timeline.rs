@@ -78,14 +78,14 @@ async fn read_timeline_returns_ordered_events() {
 
     let timeline = json.as_array().unwrap();
 
-    assert_eq!(timeline.len(), 4);
-    assert_eq!(timeline[1]["seq"], 2);
-    assert_eq!(timeline[2]["seq"], 3);
-    assert_eq!(timeline[3]["seq"], 4);
+    assert_eq!(timeline.len(), 3);
+    assert_eq!(timeline[0]["seq"], 2);
+    assert_eq!(timeline[1]["seq"], 3);
+    assert_eq!(timeline[2]["seq"], 4);
 
-    assert_eq!(timeline[1]["event_type"], "ShipmentCreated");
+    assert_eq!(timeline[0]["event_type"], "ShipmentCreated");
+    assert_eq!(timeline[1]["event_type"], "StatusChanged");
     assert_eq!(timeline[2]["event_type"], "StatusChanged");
-    assert_eq!(timeline[3]["event_type"], "StatusChanged");
 
     for item in timeline {
         let scb = item.get("scb");

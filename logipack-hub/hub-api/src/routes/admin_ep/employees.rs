@@ -4,6 +4,8 @@ use axum::{
     routing::{delete, get, post, put},
 };
 use core_application::actor::ActorContext;
+use std::collections::HashMap;
+use uuid::Uuid;
 
 use crate::{
     dto::employees::{
@@ -11,6 +13,7 @@ use crate::{
         GetEmployeeResponse, ListEmployeesResponse, UpdateEmployeeRequest, UpdateEmployeeResponse,
         UserDto,
     },
+    dto::offices::OfficeDto,
     error::ApiError,
     policy,
     state::AppState,
@@ -24,6 +27,37 @@ pub fn router() -> Router<AppState> {
         .route("/:id", put(update_employee_handler))
         .route("/:id", delete(delete_employee_handler))
         .nest("/:id/offices", super::employee_offices::router())
+}
+
+fn map_office_dto(office: core_data::entity::offices::Model) -> OfficeDto {
+    OfficeDto {
+        id: office.id.to_string(),
+        name: office.name,
+        city: office.city,
+        address: office.address,
+        updated_at: office.updated_at.to_rfc3339(),
+    }
+}
+
+async fn offices_by_id(
+    state: &AppState,
+    actor: &ActorContext,
+) -> Result<HashMap<Uuid, OfficeDto>, ApiError> {
+    let offices = core_application::offices::list::list_offices(&state.db, actor)
+        .await
+        .map_err(|e| match e {
+            core_application::offices::list::ListOfficesError::Forbidden => {
+                ApiError::forbidden("access_denied", "Access denied")
+            }
+            core_application::offices::list::ListOfficesError::OfficeError(err) => {
+                ApiError::internal(err.to_string())
+            }
+        })?;
+
+    Ok(offices
+        .into_iter()
+        .map(|office| (office.id, map_office_dto(office)))
+        .collect())
 }
 
 async fn list_employees_handler(
@@ -44,17 +78,25 @@ async fn list_employees_handler(
             }
         })?;
 
+    let offices_by_id = offices_by_id(&state, &actor).await?;
+
     let dtos: Vec<EmployeeListItemDto> = out
         .into_iter()
         .map(|employee| {
             let email = employee.user.email.unwrap_or_default();
+            let offices = employee
+                .office_ids
+                .iter()
+                .filter_map(|office_id| offices_by_id.get(office_id).cloned())
+                .collect::<Vec<_>>();
+
             EmployeeListItemDto {
                 id: employee.employee.id.to_string(),
                 user_id: employee.employee.user_id.to_string(),
                 full_name: employee.user.name,
                 user_display_name: None,
                 email,
-                offices: None,
+                offices: Some(offices),
             }
         })
         .collect();
@@ -90,6 +132,13 @@ async fn get_employee_handler(
             }
         })?;
 
+    let offices_by_id = offices_by_id(&state, &actor).await?;
+    let assigned_offices = out
+        .office_ids
+        .iter()
+        .filter_map(|office_id| offices_by_id.get(office_id).cloned())
+        .collect::<Vec<_>>();
+
     let result = GetEmployeeResponse {
         employee: EmployeeDto {
             id: out.employee.id.to_string(),
@@ -102,7 +151,7 @@ async fn get_employee_handler(
                 email: out.user.email.unwrap_or_default(),
                 name: Some(out.user.name),
             }),
-            offices: None,
+            offices: Some(assigned_offices),
             created_at: Some(out.employee.created_at.to_rfc3339()),
             updated_at: Some(out.employee.updated_at.to_rfc3339()),
             deleted_at: out.employee.deleted_at.map(|dt| dt.to_rfc3339()),
@@ -166,6 +215,13 @@ async fn create_employee_handler(
             }
         })?;
 
+    let offices_by_id = offices_by_id(&state, &actor).await?;
+    let assigned_offices = out
+        .office_ids
+        .iter()
+        .filter_map(|office_id| offices_by_id.get(office_id).cloned())
+        .collect::<Vec<_>>();
+
     let result = CreateEmployeeResponse {
         employee: EmployeeDto {
             id: out.employee.id.to_string(),
@@ -178,7 +234,7 @@ async fn create_employee_handler(
                 email: out.user.email.unwrap_or_default(),
                 name: Some(out.user.name),
             }),
-            offices: None,
+            offices: Some(assigned_offices),
             created_at: Some(out.employee.created_at.to_rfc3339()),
             updated_at: Some(out.employee.updated_at.to_rfc3339()),
             deleted_at: out.employee.deleted_at.map(|dt| dt.to_rfc3339()),
@@ -231,6 +287,13 @@ async fn update_employee_handler(
             }
         })?;
 
+    let offices_by_id = offices_by_id(&state, &actor).await?;
+    let assigned_offices = out
+        .office_ids
+        .iter()
+        .filter_map(|office_id| offices_by_id.get(office_id).cloned())
+        .collect::<Vec<_>>();
+
     let result = UpdateEmployeeResponse {
         employee: EmployeeDto {
             id: out.employee.id.to_string(),
@@ -243,7 +306,7 @@ async fn update_employee_handler(
                 email: out.user.email.unwrap_or_default(),
                 name: Some(out.user.name),
             }),
-            offices: None,
+            offices: Some(assigned_offices),
             created_at: Some(out.employee.created_at.to_rfc3339()),
             updated_at: Some(out.employee.updated_at.to_rfc3339()),
             deleted_at: out.employee.deleted_at.map(|dt| dt.to_rfc3339()),

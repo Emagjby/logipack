@@ -190,7 +190,7 @@ async fn admin_can_change_status() {
 }
 
 #[tokio::test]
-async fn employee_cannot_change_status_outside_office() {
+async fn employee_can_send_in_transit_to_other_office() {
     let db = test_db().await;
     cleanup(&db).await;
 
@@ -214,7 +214,33 @@ async fn employee_cannot_change_status_outside_office() {
 
     let employee = employee_actor(&db, vec![office1]).await;
 
-    let err = change_status(
+    change_status(
+        &db,
+        &employee,
+        ChangeStatus {
+            shipment_id,
+            to_status: ShipmentStatus::Accepted,
+            to_office_id: Some(office1),
+            notes: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    change_status(
+        &db,
+        &employee,
+        ChangeStatus {
+            shipment_id,
+            to_status: ShipmentStatus::Processed,
+            to_office_id: Some(office1),
+            notes: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    change_status(
         &db,
         &employee,
         ChangeStatus {
@@ -225,12 +251,7 @@ async fn employee_cannot_change_status_outside_office() {
         },
     )
     .await
-    .unwrap_err();
-
-    assert!(matches!(
-        err,
-        core_application::shipments::change_status::ChangeStatusError::Forbidden
-    ));
+    .unwrap();
 }
 
 #[tokio::test]
@@ -269,6 +290,50 @@ async fn employee_can_change_statuts_inside_office() {
     )
     .await
     .unwrap();
+}
+
+#[tokio::test]
+async fn employee_cannot_set_non_in_transit_to_other_office() {
+    let db = test_db().await;
+    cleanup(&db).await;
+
+    let office1 = seed_office(&db).await;
+    let office2 = seed_office(&db).await;
+    let client = seed_client(&db).await;
+
+    let admin = admin_actor(&db).await;
+
+    let shipment_id = create_shipment(
+        &db,
+        &admin,
+        CreateShipment {
+            client_id: client,
+            current_office_id: Some(office1),
+            notes: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    let employee = employee_actor(&db, vec![office1]).await;
+
+    let err = change_status(
+        &db,
+        &employee,
+        ChangeStatus {
+            shipment_id,
+            to_status: ShipmentStatus::Accepted,
+            to_office_id: Some(office2),
+            notes: None,
+        },
+    )
+    .await
+    .unwrap_err();
+
+    assert!(matches!(
+        err,
+        core_application::shipments::change_status::ChangeStatusError::Forbidden
+    ));
 }
 
 #[tokio::test]
@@ -639,7 +704,7 @@ async fn timeline_values_are_decodable() {
 }
 
 #[tokio::test]
-async fn forbidden_change_does_not_append_events() {
+async fn forbidden_non_in_transit_change_does_not_append_events() {
     let db = test_db().await;
     cleanup(&db).await;
 
@@ -668,7 +733,7 @@ async fn forbidden_change_does_not_append_events() {
         &employee,
         ChangeStatus {
             shipment_id,
-            to_status: ShipmentStatus::InTransit,
+            to_status: ShipmentStatus::Accepted,
             to_office_id: Some(office2),
             notes: None,
         },
@@ -686,7 +751,7 @@ async fn forbidden_change_does_not_append_events() {
 }
 
 #[tokio::test]
-async fn forbidden_change_does_not_mutate_snapshot() {
+async fn forbidden_non_in_transit_change_does_not_mutate_snapshot() {
     let db = test_db().await;
     cleanup(&db).await;
 
@@ -715,7 +780,7 @@ async fn forbidden_change_does_not_mutate_snapshot() {
         &employee,
         ChangeStatus {
             shipment_id,
-            to_status: ShipmentStatus::InTransit,
+            to_status: ShipmentStatus::Accepted,
             to_office_id: Some(office2),
             notes: None,
         },
@@ -734,7 +799,7 @@ async fn forbidden_change_does_not_mutate_snapshot() {
 }
 
 #[tokio::test]
-async fn forbidden_change_does_not_write_history() {
+async fn forbidden_non_in_transit_change_does_not_write_history() {
     let db = test_db().await;
     cleanup(&db).await;
 
@@ -763,7 +828,7 @@ async fn forbidden_change_does_not_write_history() {
         &employee,
         ChangeStatus {
             shipment_id,
-            to_status: ShipmentStatus::InTransit,
+            to_status: ShipmentStatus::Accepted,
             to_office_id: Some(office2),
             notes: None,
         },

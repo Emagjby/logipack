@@ -1,8 +1,19 @@
-import type { PageServerLoad } from "./$types";
-import { error } from "@sveltejs/kit";
-import type { ShipmentStatus } from "$lib/domain/shipmentStatus";
+import { HUB_API_BASE } from "$env/static/private";
+import { createHubApiClient, HubApiError } from "$lib/server/hubApi";
+import {
+	getShipment,
+	getShipmentTimeline,
+	changeShipmentStatus,
+} from "$lib/server/hubApi/services/shipments";
+import {
+	buildStatusHistory,
+	buildStrataPackages,
+	deriveCurrentOfficeIdFromTimeline,
+} from "$lib/server/hubApi/mappers/shipments";
+import { error, fail, isRedirect, redirect } from "@sveltejs/kit";
+import type { Actions, PageServerLoad } from "./$types";
+import { normalizeShipmentStatus, type ShipmentStatus } from "$lib/domain/shipmentStatus";
 import type { StrataPackage } from "$lib/domain/strataPackage";
-import { seededIndex } from "$lib/server/mockUtils";
 
 // ── Data contracts ──────────────────────────────────────────────────
 
@@ -11,7 +22,7 @@ export interface ShipmentCore {
 	id: string;
 	client_id: string;
 	current_status: ShipmentStatus | "unknown";
-	current_office_id: string;
+	current_office_id: string | null;
 	created_at: string; // ISO-8601
 	updated_at: string; // ISO-8601
 }
@@ -37,225 +48,9 @@ type DetailResult =
 	| { state: "not_found" }
 	| { state: "error"; message: string };
 
-// ── Mock helpers ────────────────────────────────────────────────────
-
-const MOCK_STATUSES: ShipmentStatus[] = [
-	"new",
-	"accepted",
-	"pending",
-	"in_transit",
-	"delivered",
-	"cancelled",
-];
-
-const MOCK_OFFICES = [
-	{ id: "office-sofia-hq", name: "Sofia HQ" },
-	{ id: "office-plovdiv-dc", name: "Plovdiv DC" },
-	{ id: "office-varna-port", name: "Varna Port" },
-	{ id: "office-vt", name: "Veliko Tarnovo Office" },
-];
-
-const MOCK_CLIENTS = [
-	{ id: "client-acme", name: "Acme Corp" },
-	{ id: "client-nova", name: "Nova Logistics" },
-	{ id: "client-techparts", name: "TechParts Ltd" },
-	{ id: "client-greenline", name: "GreenLine Express" },
-];
-
-const MOCK_ACTORS = [
-	"user-emil-ivanov",
-	"user-maria-petrova",
-	"user-georgi-dimitrov",
-	null,
-];
-
-/** Produce a deterministic hex hash from seed string. */
-function mockHash(seed: string): string {
-	let h = 0x811c9dc5;
-	for (let i = 0; i < seed.length; i++) {
-		h ^= seed.charCodeAt(i);
-		h = Math.imul(h, 0x01000193);
-	}
-	const a = (h >>> 0).toString(16).padStart(8, "0");
-	const b = ((h ^ 0xdeadbeef) >>> 0).toString(16).padStart(8, "0");
-	const c = ((h ^ 0xcafebabe) >>> 0).toString(16).padStart(8, "0");
-	const d = ((h ^ 0xfeedface) >>> 0).toString(16).padStart(8, "0");
-	return `${a}${b}${c}${d}`;
-}
-
-// ── Status transition chain ─────────────────────────────────────────
-
-const STATUS_CHAINS: Record<string, ShipmentStatus[]> = {
-	delivered: ["new", "accepted", "pending", "in_transit", "delivered"],
-	in_transit: ["new", "accepted", "pending", "in_transit"],
-	pending: ["new", "accepted", "pending"],
-	accepted: ["new", "accepted"],
-	cancelled: ["new", "accepted", "cancelled"],
-	new: ["new"],
-};
-
-function generateStatusHistory(
-	shipmentId: string,
-	currentStatus: ShipmentStatus,
-	baseTime: Date,
-): StatusHistoryRow[] {
-	const chain = STATUS_CHAINS[currentStatus] ?? ["new"];
-
-	const HISTORY_NOTES: (string | null)[] = [
-		"Shipment registered in the system",
-		"Accepted by dispatcher",
-		"Queued for processing",
-		null,
-		"Signed by recipient",
-		"Client requested cancellation",
-	];
-
-	return chain.map((status, i) => ({
-		id: `sh-${shipmentId}-${i + 1}`,
-		from_status: i === 0 ? null : chain[i - 1],
-		to_status: status,
-		changed_at: new Date(
-			baseTime.getTime() + i * (3 + seededIndex(shipmentId + i, 6)) * 3_600_000,
-		).toISOString(),
-		actor_user_id: MOCK_ACTORS[seededIndex(shipmentId + "actor" + i, MOCK_ACTORS.length)],
-		office_id: MOCK_OFFICES[seededIndex(shipmentId + "office" + i, MOCK_OFFICES.length)].id,
-		notes: HISTORY_NOTES[i % HISTORY_NOTES.length],
-	}));
-}
-
-// ── Strata package chain ────────────────────────────────────────────
-
-const EVENT_TYPES = [
-	"shipment_created",
-	"status_changed",
-	"assigned_to_office",
-	"picked_up",
-	"departed_office",
-	"arrived_at_hub",
-	"customs_cleared",
-	"out_for_delivery",
-	"delivery_attempted",
-	"delivered",
-];
-
-function generateStrataPackages(
-	shipmentId: string,
-	streamId: string,
-	statusHistory: StatusHistoryRow[],
-	baseTime: Date,
-): StrataPackage[] {
-	const count = Math.max(statusHistory.length, 6) + seededIndex(shipmentId + "pkg", 4);
-	const packages: StrataPackage[] = [];
-
-	for (let i = 0; i < count; i++) {
-		const hash = mockHash(`${shipmentId}-pkg-${i}`);
-		const prevHash = i === 0 ? null : packages[i - 1].hash;
-		const eventType = EVENT_TYPES[i % EVENT_TYPES.length];
-		const offset = i * (2 + seededIndex(shipmentId + "t" + i, 5)) * 3_600_000;
-		const createdAt = new Date(baseTime.getTime() + offset).toISOString();
-
-		const historyRow = statusHistory[i] ?? null;
-		const officeId =
-			historyRow?.office_id ??
-			MOCK_OFFICES[seededIndex(shipmentId + "po" + i, MOCK_OFFICES.length)].id;
-		const actorId =
-			historyRow?.actor_user_id ??
-			MOCK_ACTORS[seededIndex(shipmentId + "pa" + i, MOCK_ACTORS.length)];
-
-		// Build realistic "decoded SCB" payload
-		const payload: Record<string, unknown> = {
-			event_type: eventType,
-			shipment_id: shipmentId,
-			office_id: officeId,
-			actor_user_id: actorId,
-			timestamp: createdAt,
-			scb_preview: `[binary ${64 + seededIndex(hash, 128)} bytes]`,
-			raw_scb_base64:
-				Buffer.from(`mock-scb-${shipmentId}-${i}`).toString("base64").slice(0, 44) +
-				"==",
-		};
-
-		if (historyRow) {
-			if (historyRow.from_status !== null) {
-				payload.from_status = historyRow.from_status;
-			}
-			payload.to_status = historyRow.to_status;
-			if (historyRow.notes) {
-				payload.notes = historyRow.notes;
-			}
-		}
-
-		packages.push({
-			hash,
-			prev_hash: prevHash,
-			stream_id: streamId,
-			seq: i + 1,
-			event_type: eventType,
-			created_at: createdAt,
-			payload_json: payload,
-		});
-	}
-
-	return packages.sort((a, b) => a.seq - b.seq);
-}
-
-// ── Fetch (mock) ────────────────────────────────────────────────────
-
-/**
- * TODO(api): Replace with real hub-api calls once endpoints exist.
- *
- * Expected endpoints:
- *   GET {HUB_API_BASE}/shipments/:id
- *     Response: { shipment: ShipmentCore }
- *
- *   GET {HUB_API_BASE}/shipments/:id/status-history
- *     Response: { history: StatusHistoryRow[] }
- *
- *   GET {HUB_API_BASE}/streams/:stream_id/packages
- *     Response: { packages: StrataPackage[] }
- *
- * Headers: Authorization: Bearer <accessToken>
- * The access token lives in the encrypted session cookie.
- */
-async function fetchShipmentDetail(id: string): Promise<DetailResult> {
-	// TODO(api): fetch shipments row by id
-	// TODO(api): fetch shipment_status_history by shipment_id
-	// TODO(api): fetch Strata packages by stream_id
-	// TODO(strata): decode SCB to JSON (currently mocked)
-	if (!/^SHP-\d{4,}$/i.test(id)) {
-		return { state: "not_found" };
-	}
-
-	const now = new Date();
-	const baseTime = new Date(now.getTime() - 72 * 3_600_000); // 3 days ago
-
-	const statusIdx = seededIndex(id, MOCK_STATUSES.length);
-	const officeIdx = seededIndex(id + "office", MOCK_OFFICES.length);
-	const clientIdx = seededIndex(id + "client", MOCK_CLIENTS.length);
-	const currentStatus = MOCK_STATUSES[statusIdx];
-
-	const shipment: ShipmentCore = {
-		id,
-		client_id: MOCK_CLIENTS[clientIdx].id,
-		current_status: currentStatus,
-		current_office_id: MOCK_OFFICES[officeIdx].id,
-		created_at: baseTime.toISOString(),
-		updated_at: new Date(
-			now.getTime() - seededIndex(id + "upd", 48) * 3_600_000,
-		).toISOString(),
-	};
-
-	const statusHistory = generateStatusHistory(id, currentStatus, baseTime);
-
-	const streamId = `stream-shipment-${id}`;
-	const packages = generateStrataPackages(id, streamId, statusHistory, baseTime);
-
-	return { state: "ok", shipment, statusHistory, packages };
-}
-
 // ── Load function ───────────────────────────────────────────────────
 
-export const load: PageServerLoad = async ({ parent, params }) => {
+export const load: PageServerLoad = async ({ parent, params, fetch, locals }) => {
 	const { session } = await parent();
 
 	// Role guard: admin should not access employee pages
@@ -263,17 +58,137 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 		throw error(403, "error.details.employee_only");
 	}
 
-	const id = params.id;
-
 	try {
-		const result = await fetchShipmentDetail(id);
+		const client = createHubApiClient({
+			fetch,
+			locals,
+			baseUrl: HUB_API_BASE,
+		});
+
+		const timelineQuery = new URLSearchParams({ format: "PRETTY" });
+
+		const [detail, timeline] = await Promise.all([
+			getShipment(client, params.id),
+			getShipmentTimeline(client, params.id, timelineQuery),
+		]);
+
+		const statusHistory = buildStatusHistory(detail.id, detail, timeline);
+		const packages = buildStrataPackages(detail.id, timeline);
+		const currentOfficeFromStrata = deriveCurrentOfficeIdFromTimeline(
+			timeline,
+			detail.current_office_id,
+		);
+
+		const result: DetailResult = {
+			state: "ok",
+			shipment: {
+				id: detail.id,
+				client_id: detail.client_id,
+				current_status: detail.current_status,
+				current_office_id: currentOfficeFromStrata,
+				created_at: detail.created_at,
+				updated_at: detail.updated_at,
+			},
+			statusHistory,
+			packages,
+		};
+
 		return { result };
 	} catch (e) {
+		if (e instanceof HubApiError && e.status === 404) {
+			return { result: { state: "not_found" as const } };
+		}
+
+		if (e instanceof HubApiError) {
+			console.error("employee.shipments.detail failed", {
+				status: e.status,
+				code: e.code,
+				message: e.message,
+				upstream: e.upstream,
+			});
+		} else {
+			console.error("employee.shipments.detail failed", e);
+		}
+
 		return {
 			result: {
 				state: "error" as const,
-				message: e instanceof Error ? e.message : "Unknown error",
+				message:
+					e instanceof Error ? e.message : "Unknown error",
 			},
 		};
 	}
+};
+
+// ── Actions ─────────────────────────────────────────────────────────
+
+export const actions: Actions = {
+	changeStatus: async ({ request, params, fetch, locals }) => {
+		const session = (locals.session ?? null) as { role?: string } | null;
+		if (session?.role === "admin") {
+			throw error(403, "error.details.employee_only");
+		}
+
+		const formData = await request.formData();
+		const toStatus = (formData.get("to_status") as string | null)?.trim() ?? "";
+		const toOfficeId = (formData.get("to_office_id") as string | null)?.trim() || null;
+		const notes = (formData.get("notes") as string | null)?.trim() || null;
+
+		if (!toStatus) {
+			return fail(400, {
+				changeStatusError: "shipment.update.invalid_status",
+				values: { to_status: toStatus, to_office_id: toOfficeId, notes },
+			});
+		}
+
+		const normalizedStatus = normalizeShipmentStatus(toStatus);
+		if (normalizedStatus === "unknown") {
+			return fail(400, {
+				changeStatusError: "shipment.update.invalid_status",
+				values: { to_status: toStatus, to_office_id: toOfficeId, notes },
+			});
+		}
+
+		if (normalizedStatus === "in_transit" && !toOfficeId) {
+			return fail(400, {
+				changeStatusError: "shipment.update.office_required",
+				values: { to_status: toStatus, to_office_id: "", notes },
+			});
+		}
+
+		const effectiveOfficeId = normalizedStatus === "in_transit" ? toOfficeId : null;
+
+		try {
+			const client = createHubApiClient({
+				fetch,
+				locals,
+				baseUrl: HUB_API_BASE,
+			});
+
+			await changeShipmentStatus(client, params.id, {
+				to_status: normalizedStatus,
+				to_office_id: effectiveOfficeId,
+				notes,
+			});
+
+			// Redirect back to the same page to reload fresh data
+			throw redirect(303, `/${params.lang ?? "en"}/app/employee/shipments/${params.id}`);
+		} catch (e) {
+			if (isRedirect(e)) throw e;
+
+			console.error("employee.shipments.changeStatus failed", {
+				shipment_id: params.id,
+				to_status: normalizedStatus,
+				e,
+			});
+
+			return fail(
+				e instanceof HubApiError ? Math.max(e.status, 400) : 500,
+				{
+					changeStatusError: "shipment.update.failed",
+					values: { to_status: toStatus, to_office_id: toOfficeId, notes },
+				},
+			);
+		}
+	},
 };

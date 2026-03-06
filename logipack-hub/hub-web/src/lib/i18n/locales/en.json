@@ -201,6 +201,7 @@
 
     "shipment.viewer.title": "Package Details",
     "shipment.viewer.copy_json": "Copy JSON",
+    "shipment.viewer.copy_strata": "Copy Strata",
     "shipment.viewer.copied": "Copied",
     "shipment.viewer.close": "Close",
     "shipment.viewer.payload": "Payload",
@@ -394,6 +395,7 @@
     "employee.shipments.new.loading_office": "Resolving office...",
     "employee.shipments.new.office_not_available": "Not available",
     "employee.shipments.new.office_required": "You must be assigned to an office before creating shipments.",
+    "employee.shipments.new.submit_failed": "We couldn't create the shipment right now. Please try again.",
 
     "admin.shipments.detail.headline": "Shipment Details",
     "admin.shipments.detail.viewing": "Viewing shipment: {id}",
@@ -525,5 +527,21 @@
     "profile.not_assigned": "Not assigned",
     "profile.copy": "Copy",
     "profile.copied": "Copied",
-    "profile.preferences.language_help": "Language changes apply immediately."
+    "profile.preferences.language_help": "Language changes apply immediately.",
+
+    "shipment.update.title": "Update Status",
+    "shipment.update.new_status": "New Status",
+    "shipment.update.select_status": "Select status",
+    "shipment.update.office": "Transfer to Office",
+    "shipment.update.office_placeholder": "Office ID (optional)",
+    "shipment.update.office_hint": "Required when transitioning to In Transit.",
+    "shipment.update.notes": "Notes",
+    "shipment.update.notes_placeholder": "Optional note...",
+    "shipment.update.submit": "Update",
+    "shipment.update.submitting": "Updating...",
+    "shipment.update.success": "Status updated successfully.",
+    "shipment.update.failed": "Failed to update status. Please try again.",
+    "shipment.update.invalid_status": "Please select a valid status.",
+    "shipment.update.office_required": "Office is required when transitioning to In Transit.",
+    "shipment.update.terminal_hint": "This shipment is in a terminal state and cannot be updated."
 }

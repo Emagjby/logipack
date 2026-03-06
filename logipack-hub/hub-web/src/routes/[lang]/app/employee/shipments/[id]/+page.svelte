@@ -1,36 +1,68 @@
 <script lang="ts">
 	import type { PageData } from "./$types";
 	import { page } from "$app/state";
+	import { enhance } from "$app/forms";
 	import { _ } from "svelte-i18n";
 	import {
 		formatDateTime,
 		shortenHash,
 		type StrataPackage,
 	} from "$lib/domain/strataPackage";
+	import { normalizeShipmentStatus } from "$lib/domain/shipmentStatus";
 	import ShipmentStatusBadge from "$lib/components/app/ShipmentStatusBadge.svelte";
 	import StrataPackageViewer from "$lib/components/app/StrataPackageViewer.svelte";
+	import CopyIconButton from "$lib/components/app/CopyIconButton.svelte";
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: any } = $props();
 
 	let lang = $derived(data.pathname.split("/")[1] || "en");
-	let copiedId = $state(false);
 	let selectedPackage = $state<StrataPackage | null>(null);
-
-	async function copyId(id: string) {
-		try {
-			await navigator.clipboard.writeText(id);
-			copiedId = true;
-			setTimeout(() => {
-				copiedId = false;
-			}, 1200);
-		} catch {
-			// Ignore clipboard errors
+	let submitting = $state(false);
+	let selectedStatus = $derived(form?.values?.to_status ?? "");
+	let isOfficeRequired = $derived(selectedStatus === "in_transit");
+	let isOfficeDisabled = $derived(selectedStatus !== "in_transit");
+	let lastKnownHistoryOfficeId = $derived.by(() => {
+		if (data.result.state !== "ok") return "";
+		for (let i = data.result.statusHistory.length - 1; i >= 0; i--) {
+			const office = data.result.statusHistory[i]?.office_id?.trim();
+			if (office) return office;
 		}
+		return "";
+	});
+	let officeInputValue = $derived.by(() => {
+		const fromForm = form?.values?.to_office_id;
+		if (typeof fromForm === "string" && fromForm.trim().length > 0) {
+			return fromForm;
+		}
+		return lastKnownHistoryOfficeId;
+	});
+
+	const TRANSITIONS: Record<string, string[]> = {
+		new: ["accepted", "cancelled"],
+		accepted: ["pending", "cancelled"],
+		pending: ["in_transit", "cancelled"],
+		in_transit: ["delivered", "cancelled"],
+		delivered: [],
+		cancelled: [],
+		unknown: [],
+	};
+
+	function compactId(value: string): string {
+		return `${value.slice(0, 8)}...`;
+	}
+
+	function isLikelyId(value: string): boolean {
+		return /^[a-f0-9-]{8,}$/i.test(value);
 	}
 
 	function formatEventType(type: string): string {
-		return type
-			.split("_")
+		// Handle PascalCase (e.g. "ShipmentCreated" → "Shipment created")
+		const hasUnderscore = type.includes("_");
+		const words = hasUnderscore
+			? type.split("_")
+			: type.replace(/([a-z])([A-Z])/g, "$1 $2").split(" ");
+
+		return words
 			.map((word, i) =>
 				i === 0
 					? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
@@ -38,7 +70,6 @@
 			)
 			.join(" ");
 	}
-
 </script>
 
 {#if data.result.state === "error"}
@@ -113,6 +144,30 @@
 	{@const shipment = data.result.shipment}
 	{@const statusHistory = data.result.statusHistory}
 	{@const packages = data.result.packages}
+	{@const offices =
+		(
+			data.result as {
+				offices?: { id: string; name?: string | null }[];
+			}
+		).offices ??
+		(
+			data as {
+				offices?: { id: string; name?: string | null }[];
+			}
+		).offices ??
+		[]}
+	{@const officeLabelById = new Map(
+		offices
+			.filter((office) => Boolean(office?.id))
+			.map((office) => [office.id, office.name ?? office.id]),
+	)}
+	{@const orderedStatusHistory = [...statusHistory].sort(
+		(a, b) =>
+			new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime(),
+	)}
+	{@const currentOfficeForHeader =
+		orderedStatusHistory[orderedStatusHistory.length - 1]?.office_id ??
+		shipment.current_office_id}
 
 	<!-- 1. Header row -->
 	<section
@@ -153,36 +208,12 @@
 				</dt>
 				<dd class="mt-1 flex items-center gap-2 text-sm">
 					<span class="font-mono text-accent">{shipment.id}</span>
-					<button
-						type="button"
-						onclick={() => copyId(shipment.id)}
-						class="cursor-pointer rounded-md bg-surface-800 px-1.5 py-1 text-[0.62rem] font-medium text-accent transition-colors hover:bg-surface-700"
+					<CopyIconButton
+						value={shipment.id}
 						title={$_("shipment.detail.copy_id")}
-						aria-label={$_("shipment.detail.copy_id")}
-					>
-						{#if copiedId}
-							{$_("shipment.detail.copied")}
-						{:else}
-							<svg
-								class="h-3.5 w-3.5 text-accent"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<rect
-									x="9"
-									y="9"
-									width="11"
-									height="11"
-									rx="2"
-								/>
-								<path
-									d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-								/>
-							</svg>
-						{/if}
-					</button>
+						ariaLabel={$_("shipment.detail.copy_id")}
+						class="text-accent"
+					/>
 				</dd>
 			</div>
 
@@ -218,7 +249,7 @@
 					{$_("shipment.meta.current_office_id")}
 				</dt>
 				<dd class="mt-1 font-mono text-sm text-surface-200">
-					{shipment.current_office_id}
+					{currentOfficeForHeader ?? $_("common.none")}
 				</dd>
 			</div>
 
@@ -248,9 +279,134 @@
 		</dl>
 	</div>
 
-	<!-- 3. Status History panel -->
+	<!-- 3. Update Status form -->
+	{@const normalizedStatus = normalizeShipmentStatus(shipment.current_status)}
+	{@const availableStatuses = TRANSITIONS[normalizedStatus] ?? []}
+	{@const isTerminal = availableStatuses.length === 0}
+
 	<div
-		class="stagger stagger-3 mt-6 rounded-xl border border-surface-700/50 bg-surface-900"
+		class="stagger stagger-3 mt-6 rounded-xl border border-surface-700/50 bg-surface-900 p-5"
+	>
+		<h2 class="text-sm font-semibold text-surface-50">
+			{$_("shipment.update.title")}
+		</h2>
+
+		{#if isTerminal}
+			<p class="mt-3 text-sm text-surface-200">
+				{$_("shipment.update.terminal_hint")}
+			</p>
+		{:else}
+			{#if form?.changeStatusError}
+				<div
+					class="mt-3 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400"
+				>
+					{$_(form.changeStatusError)}
+				</div>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/changeStatus"
+				use:enhance={() => {
+					submitting = true;
+					return async ({ update }) => {
+						submitting = false;
+						await update();
+					};
+				}}
+				class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2"
+			>
+				<!-- New Status -->
+				<div>
+					<label
+						for="to_status"
+						class="block text-[11px] font-medium uppercase tracking-wider text-surface-600"
+					>
+						{$_("shipment.update.new_status")}
+					</label>
+					<select
+						id="to_status"
+						name="to_status"
+						required
+						bind:value={selectedStatus}
+						class="mt-1 w-full rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/30"
+					>
+						<option value="" disabled>
+							{$_("shipment.update.select_status")}
+						</option>
+						{#each availableStatuses as status (status)}
+							<option value={status}>
+								{$_(`shipment_status.${status}`)}
+							</option>
+						{/each}
+					</select>
+				</div>
+
+				<!-- Office ID -->
+				<div>
+					<label
+						for="to_office_id"
+						class="block text-[11px] font-medium uppercase tracking-wider text-surface-600"
+					>
+						{$_("shipment.update.office")}
+					</label>
+					<input
+						type="text"
+						id="to_office_id"
+						name="to_office_id"
+						required={isOfficeRequired}
+						disabled={isOfficeDisabled}
+						value={officeInputValue}
+						placeholder={$_("shipment.update.office_placeholder")}
+						class="mt-1 w-full rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-600 outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-60"
+					/>
+					<p class="mt-1 text-[11px] text-surface-600">
+						{$_("shipment.update.office_hint")}
+						{#if isOfficeDisabled}
+							<span class="ml-1 text-surface-500">(In transit only)</span>
+						{/if}
+					</p>
+				</div>
+
+				<!-- Notes -->
+				<div class="sm:col-span-2">
+					<label
+						for="notes"
+						class="block text-[11px] font-medium uppercase tracking-wider text-surface-600"
+					>
+						{$_("shipment.update.notes")}
+					</label>
+					<textarea
+						id="notes"
+						name="notes"
+						rows="2"
+						placeholder={$_("shipment.update.notes_placeholder")}
+						class="mt-1 w-full rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-600 outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/30"
+						>{form?.values?.notes ?? ""}</textarea
+					>
+				</div>
+
+				<!-- Submit -->
+				<div class="sm:col-span-2">
+					<button
+						type="submit"
+						disabled={submitting}
+						class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{#if submitting}
+							{$_("shipment.update.submitting")}
+						{:else}
+							{$_("shipment.update.submit")}
+						{/if}
+					</button>
+				</div>
+			</form>
+		{/if}
+	</div>
+
+	<!-- 4. Status History panel -->
+	<div
+		class="stagger stagger-4 mt-6 rounded-xl border border-surface-700/50 bg-surface-900"
 	>
 		<div class="border-b border-surface-700/50 px-5 py-4">
 			<h2 class="text-sm font-semibold text-surface-50">
@@ -258,49 +414,64 @@
 			</h2>
 		</div>
 
-		{#if statusHistory.length === 0}
+		{#if orderedStatusHistory.length === 0}
 			<div class="px-5 py-8 text-center text-sm text-surface-600">
 				{$_("shipment.history.no_notes")}
 			</div>
 		{:else}
-			<div class="overflow-x-auto">
-				<table class="w-full">
+			<div class="overflow-x-hidden">
+				<table class="w-full table-fixed">
 					<thead>
 						<tr>
 							<th
-								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								class="w-[20%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
 								{$_("shipment.history.changed_at")}
 							</th>
 							<th
-								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								class="w-[14%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
 								{$_("shipment.history.from_status")}
 							</th>
 							<th
-								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								class="w-[14%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
 								{$_("shipment.history.to_status")}
 							</th>
 							<th
-								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								class="w-[20%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
 								{$_("shipment.history.office")}
 							</th>
 							<th
-								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								class="w-[20%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
 								{$_("shipment.history.actor")}
 							</th>
 							<th
-								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								class="w-[12%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
 								{$_("shipment.history.notes")}
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each statusHistory as row (row.id)}
+						{#each orderedStatusHistory as row (row.id)}
+							{@const officeLabel = row.office_id
+								? (officeLabelById.get(row.office_id) ??
+									row.office_id)
+								: null}
+							{@const officeValue = officeLabel ?? null}
+							{@const officeHasRawId = Boolean(
+								row.office_id && officeValue === row.office_id,
+							)}
+							{@const officeIsId = officeValue
+								? isLikelyId(officeValue)
+								: false}
+							{@const actorValue = row.actor_user_id ?? null}
+							{@const actorIsId = actorValue
+								? isLikelyId(actorValue)
+								: false}
 							<tr
 								class="border-t border-surface-800 transition-colors hover:bg-surface-800/50"
 							>
@@ -324,26 +495,77 @@
 								</td>
 								<td class="px-5 py-3">
 									<ShipmentStatusBadge
-										status={row.to_status}
+										status={row.to_status ?? "unknown"}
 										compact
 									/>
 								</td>
 								<td
-									class="px-5 py-3 font-mono text-xs text-surface-400"
+									class="min-w-0 px-5 py-3 font-mono text-xs text-surface-400"
 								>
-									{row.office_id ?? $_("common.none")}
+									{#if officeValue}
+										<div class="flex min-w-0 items-center gap-1.5">
+											<span class="truncate">
+												{officeHasRawId && officeIsId
+													? compactId(officeValue)
+													: officeValue}
+											</span>
+											{#if officeHasRawId && officeIsId}
+												<CopyIconButton
+													value={officeValue}
+													title={$_(
+														"shipment.detail.copy_id",
+													)}
+													ariaLabel={$_(
+														"shipment.detail.copy_id",
+													)}
+												/>
+											{/if}
+										</div>
+									{:else}
+										{$_("common.none")}
+									{/if}
 								</td>
 								<td
-									class="px-5 py-3 font-mono text-xs text-surface-400"
+									class="min-w-0 px-5 py-3 font-mono text-xs text-surface-400"
 								>
-									{row.actor_user_id ?? $_("common.none")}
+									{#if actorValue}
+										<div class="flex min-w-0 items-center gap-1.5">
+											<span class="truncate"
+												>{actorIsId
+													? compactId(actorValue)
+													: actorValue}</span
+											>
+											{#if actorIsId}
+												<CopyIconButton
+													value={actorValue}
+													title={$_(
+														"shipment.detail.copy_id",
+													)}
+													ariaLabel={$_(
+														"shipment.detail.copy_id",
+													)}
+												/>
+											{/if}
+										</div>
+									{:else}
+										{$_("common.none")}
+									{/if}
 								</td>
 								<td
-									class="max-w-[200px] truncate px-5 py-3 text-xs text-surface-400"
-									title={row.notes ?? undefined}
+									class="min-w-0 max-w-[220px] px-5 py-3 text-xs text-surface-400"
 								>
-									{row.notes ??
-										$_("shipment.history.no_notes")}
+									{#if row.notes}
+										<div class="group relative w-full">
+											<p class="truncate">{row.notes}</p>
+											<div
+												class="pointer-events-none invisible absolute right-0 top-full z-10 mt-1 w-80 max-w-[min(24rem,75vw)] rounded-md border border-surface-700 bg-surface-900 px-2 py-1.5 text-xs text-surface-200 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100"
+											>
+												{row.notes}
+											</div>
+										</div>
+									{:else}
+										{$_("shipment.history.no_notes")}
+									{/if}
 								</td>
 							</tr>
 						{/each}
@@ -353,9 +575,9 @@
 		{/if}
 	</div>
 
-	<!-- 4. Strata Timeline panel -->
+	<!-- 5. Strata Timeline panel -->
 	<div
-		class="stagger stagger-4 mt-6 rounded-xl border border-surface-700/50 bg-surface-900"
+		class="stagger stagger-5 mt-6 rounded-xl border border-surface-700/50 bg-surface-900"
 	>
 		<div class="border-b border-surface-700/50 px-5 py-4">
 			<h2 class="text-sm font-semibold text-surface-50">
@@ -381,11 +603,6 @@
 								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
 								{$_("shipment.strata.event_type")}
-							</th>
-							<th
-								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-							>
-								{$_("shipment.strata.created_at")}
 							</th>
 							<th
 								class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
@@ -424,11 +641,6 @@
 									{formatEventType(pkg.event_type)}
 								</td>
 								<td
-									class="whitespace-nowrap px-5 py-3 text-xs text-surface-400"
-								>
-									{formatDateTime(pkg.created_at, lang)}
-								</td>
-								<td
 									class="px-5 py-3 font-mono text-xs text-accent"
 									title={pkg.hash}
 								>
@@ -455,10 +667,10 @@
 		{/if}
 	</div>
 
-	<!-- 5. Strata Package Viewer modal -->
+	<!-- 6. Strata Package Viewer modal -->
 	<StrataPackageViewer
 		pkg={selectedPackage}
-		lang={lang}
+		{lang}
 		onclose={() => {
 			selectedPackage = null;
 		}}
@@ -491,5 +703,8 @@
 	}
 	.stagger-4 {
 		animation-delay: 0.2s;
+	}
+	.stagger-5 {
+		animation-delay: 0.25s;
 	}
 </style>
