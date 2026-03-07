@@ -4,6 +4,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 use crate::validation::client::{ClientValidationError, validate_client};
 
 #[derive(Debug, Clone)]
@@ -21,6 +24,8 @@ pub enum CreateClientError {
     Validation(#[from] ClientValidationError),
     #[error("{0}")]
     ClientCreationError(#[from] ClientError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn create_client(
@@ -41,8 +46,37 @@ pub async fn create_client(
 
     let client_id = Uuid::new_v4();
 
-    clients_repo::ClientsRepo::create_client(db, client_id, input.name, input.phone, input.email)
-        .await?;
+    let CreateClient { name, phone, email } = input;
+
+    clients_repo::ClientsRepo::create_client(
+        db,
+        client_id,
+        name.clone(),
+        phone.clone(),
+        email.clone(),
+    )
+    .await?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::ClientCreated,
+            entity_type: Some(AuditEntityType::Client),
+            entity_id: Some(client_id.to_string()),
+            entity_label: Some(name),
+            office_id: None,
+            office_label: None,
+            target_route: Some(format!("/app/admin/clients/{}", client_id)),
+            metadata_json: Some(serde_json::json!({
+                "phone": phone,
+                "email": email,
+            })),
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(client_id)
 }

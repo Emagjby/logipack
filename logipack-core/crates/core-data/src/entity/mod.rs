@@ -1,3 +1,4 @@
+pub mod audit_events;
 pub mod clients;
 pub mod employee_offices;
 pub mod employees;

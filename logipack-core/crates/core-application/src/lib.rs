@@ -1,4 +1,5 @@
 pub mod actor;
+pub mod audit;
 pub mod clients;
 pub mod employee_offices;
 pub mod employees;

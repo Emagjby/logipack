@@ -186,6 +186,9 @@ async fn create_employee_handler(
                 core_application::employees::create::CreateEmployeeError::UserError(err) => {
                     ApiError::internal(err.to_string())
                 }
+                core_application::employees::create::CreateEmployeeError::Audit(err) => {
+                    ApiError::internal(err.to_string())
+                }
                 core_application::employees::create::CreateEmployeeError::EmployeeCreationError(
                     err,
                 ) => match err {
@@ -271,6 +274,9 @@ async fn update_employee_handler(
             core_application::employees::update::UpdateEmployeeError::EmployeeError(err) => {
                 ApiError::internal(err.to_string())
             }
+            core_application::employees::update::UpdateEmployeeError::Audit(err) => {
+                ApiError::internal(err.to_string())
+            }
         })?;
 
     let out = core_application::employees::get::get_employee(&state.db, &actor, out)
@@ -338,6 +344,9 @@ async fn delete_employee_handler(
                 ApiError::forbidden("access_denied", "Access denied")
             }
             core_application::employees::delete::DeleteEmployeeError::EmployeeError(err) => {
+                ApiError::internal(err.to_string())
+            }
+            core_application::employees::delete::DeleteEmployeeError::Audit(err) => {
                 ApiError::internal(err.to_string())
             }
         })?;

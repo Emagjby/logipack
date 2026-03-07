@@ -48,6 +48,7 @@ pub async fn seed_user(db: &DatabaseConnection) -> Uuid {
 
 pub async fn cleanup_core_data(db: &DatabaseConnection) {
     let tables = [
+        "audit_events",
         "shipment_status_history",
         "shipments",
         "employee_offices",

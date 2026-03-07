@@ -6,6 +6,7 @@ mod m2026_01_27_email_nullable;
 mod m2026_01_27_password_hash_nullable;
 mod m2026_02_13_soft_delete;
 mod m2026_02_17_user_name;
+mod m2026_03_07_create_audit_events;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m2026_01_27_email_nullable::Migration),
             Box::new(m2026_02_13_soft_delete::Migration),
             Box::new(m2026_02_17_user_name::Migration),
+            Box::new(m2026_03_07_create_audit_events::Migration),
         ]
     }
 

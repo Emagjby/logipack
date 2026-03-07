@@ -21,6 +21,14 @@ pub enum UserError {
 pub struct UserRepo;
 
 impl UserRepo {
+    pub async fn get_by_id(
+        db: &DatabaseConnection,
+        user_id: Uuid,
+    ) -> Result<Option<users::Model>, UserError> {
+        let user = users::Entity::find_by_id(user_id).one(db).await?;
+        Ok(user)
+    }
+
     /// Finds a user by their Auth0 subject identifier.
     pub async fn get_by_auth0_sub(
         db: &DatabaseConnection,

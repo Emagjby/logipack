@@ -150,6 +150,7 @@ pub fn test_config() -> Config {
 
 pub async fn cleanup_db(db: &DatabaseConnection) {
     let tables = [
+        "audit_events",
         "shipment_status_history",
         "shipments",
         "employee_offices",

@@ -61,6 +61,9 @@ async fn assign_office_handler(
             core_application::employee_offices::assign::AssignOfficeError::AssignError(err) => {
                 ApiError::internal(err.to_string())
             }
+            core_application::employee_offices::assign::AssignOfficeError::Audit(err) => {
+                ApiError::internal(err.to_string())
+            }
         })?;
 
     Ok(axum::http::StatusCode::OK)
@@ -100,6 +103,9 @@ async fn remove_office_handler(
                 ApiError::not_found("office_not_found", "Office not found")
             }
             core_application::employee_offices::remove::RemoveOfficeError::RemoveError(err) => {
+                ApiError::internal(err.to_string())
+            }
+            core_application::employee_offices::remove::RemoveOfficeError::Audit(err) => {
                 ApiError::internal(err.to_string())
             }
         })?;

@@ -11,6 +11,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 
 #[derive(Debug, Clone)]
 pub struct ChangeStatus {
@@ -34,6 +37,8 @@ pub enum ChangeStatusError {
     DbError(#[from] sea_orm::DbErr),
     #[error("eventstore error: {0}")]
     EventstoreError(#[from] core_eventstore::adapter::append::AppendError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn change_status(
@@ -137,6 +142,33 @@ pub async fn change_status(
 
     ShipmentsRepo::update_snapshot_status(db, input.shipment_id, input.to_status, new_office)
         .await?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::ShipmentStatusUpdated,
+            entity_type: Some(AuditEntityType::Shipment),
+            entity_id: Some(input.shipment_id.to_string()),
+            entity_label: Some(format!("Shipment {}", input.shipment_id)),
+            office_id: input.to_office_id.or(current_office),
+            office_label: input
+                .to_office_id
+                .or(current_office)
+                .map(|office_id| format!("Office {}", office_id)),
+            target_route: Some(format!("/app/admin/shipments/{}", input.shipment_id)),
+            metadata_json: Some(serde_json::json!({
+                "from_status": from_status.to_string(),
+                "to_status": input.to_status.to_string(),
+                "from_office_id": current_office.map(|value| value.to_string()),
+                "to_office_id": input.to_office_id.map(|value| value.to_string()),
+                "notes": input.notes,
+            })),
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(())
 }

@@ -11,6 +11,7 @@ uuid = "1.19.0"
 sea-orm = { version = "1", features = ["sqlx-postgres", "runtime-tokio-native-tls"] }
 thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
+serde_json = "1"
 
 core-domain = { path = "../core-domain" }
 core-data = { path = "../core-data" }

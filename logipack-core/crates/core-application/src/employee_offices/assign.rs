@@ -4,6 +4,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 
 #[derive(Debug, Clone)]
 pub struct AssignOffice {
@@ -23,6 +26,8 @@ pub enum AssignOfficeError {
     AlreadyAssigned,
     #[error("{0}")]
     AssignError(#[from] EmployeeOfficeError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn assign_office(
@@ -45,6 +50,27 @@ pub async fn assign_office(
     if !inserted {
         return Err(AssignOfficeError::AlreadyAssigned);
     }
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::EmployeeAssignedToOffice,
+            entity_type: Some(AuditEntityType::Employee),
+            entity_id: Some(input.employee_id.to_string()),
+            entity_label: Some(format!("Employee {}", input.employee_id)),
+            office_id: Some(input.office_id),
+            office_label: Some(format!("Office {}", input.office_id)),
+            target_route: Some(format!(
+                "/app/admin/employees/{}/offices",
+                input.employee_id
+            )),
+            metadata_json: None,
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(())
 }

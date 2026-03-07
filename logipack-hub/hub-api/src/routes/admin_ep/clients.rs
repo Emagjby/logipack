@@ -125,6 +125,9 @@ async fn create_client_handler(
             core_application::clients::create::CreateClientError::ClientCreationError(err) => {
                 ApiError::internal(err.to_string())
             }
+            core_application::clients::create::CreateClientError::Audit(err) => {
+                ApiError::internal(err.to_string())
+            }
         })?;
 
     let out = core_application::clients::get::get_client(&state.db, &actor, client_id)
@@ -191,6 +194,9 @@ async fn update_client_handler(
             core_application::clients::update::UpdateClientError::UpdateClientError(err) => {
                 ApiError::internal(err.to_string())
             }
+            core_application::clients::update::UpdateClientError::Audit(err) => {
+                ApiError::internal(err.to_string())
+            }
         })?;
 
     let out = core_application::clients::get::get_client(&state.db, &actor, updated_id)
@@ -244,6 +250,9 @@ async fn delete_client_handler(
                 ApiError::forbidden("access_denied", "Access denied")
             }
             core_application::clients::delete::DeleteClientError::DeleteClientError(err) => {
+                ApiError::internal(err.to_string())
+            }
+            core_application::clients::delete::DeleteClientError::Audit(err) => {
                 ApiError::internal(err.to_string())
             }
         })?;

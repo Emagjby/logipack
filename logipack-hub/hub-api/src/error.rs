@@ -117,6 +117,7 @@ impl From<CreateShipmentError> for ApiError {
             }
 
             CreateShipmentError::SnapshotError(e) => e.into(),
+            CreateShipmentError::Audit(e) => ApiError::internal(format!("audit error: {e}")),
         }
     }
 }
@@ -142,6 +143,7 @@ impl From<ChangeStatusError> for ApiError {
             ChangeStatusError::EventstoreError(e) => {
                 ApiError::internal(format!("eventstore error: {e}"))
             }
+            ChangeStatusError::Audit(e) => ApiError::internal(format!("audit error: {e}")),
         }
     }
 }

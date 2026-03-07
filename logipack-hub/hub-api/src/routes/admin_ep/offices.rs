@@ -125,6 +125,9 @@ async fn create_office_handler(
             core_application::offices::create::CreateOfficeError::OfficeCreationError(err) => {
                 ApiError::internal(err.to_string())
             }
+            core_application::offices::create::CreateOfficeError::Audit(err) => {
+                ApiError::internal(err.to_string())
+            }
         })?;
 
     let out = core_application::offices::get::get_office(&state.db, &actor, office_id)
@@ -192,6 +195,9 @@ async fn update_office_handler(
             core_application::offices::update::UpdateOfficeError::UpdateOfficeError(err) => {
                 ApiError::internal(err.to_string())
             }
+            core_application::offices::update::UpdateOfficeError::Audit(err) => {
+                ApiError::internal(err.to_string())
+            }
         })?;
 
     let out = core_application::offices::get::get_office(&state.db, &actor, updated_id)
@@ -246,6 +252,9 @@ async fn delete_office_handler(
                 ApiError::forbidden("access_denied", "Access denied")
             }
             core_application::offices::delete::DeleteOfficeError::DeleteOfficeError(err) => {
+                ApiError::internal(err.to_string())
+            }
+            core_application::offices::delete::DeleteOfficeError::Audit(err) => {
                 ApiError::internal(err.to_string())
             }
         })?;

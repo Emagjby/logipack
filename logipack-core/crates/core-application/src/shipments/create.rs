@@ -9,6 +9,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 
 use strata::value::Value;
 use strata::{int, map, null, string};
@@ -32,6 +35,8 @@ pub enum CreateShipmentError {
     EnsureStreamError(#[from] core_eventstore::adapter::streams::EnsureStreamError),
     #[error("create shipment snapshot error: {0}")]
     SnapshotError(#[from] core_data::repository::shipments_repo::ShipmentSnapshotError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn create_shipment(
@@ -95,13 +100,38 @@ pub async fn create_shipment(
         },
         "occured_at" => int!(occured_at),
         "notes" => match input.notes {
-            Some(notes) => string!(notes),
+            Some(ref notes) => string!(notes),
             None => null!(),
         }
     };
 
     core_eventstore::adapter::events::append_event(db, shipment_id, "ShipmentCreated", &payload)
         .await?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::ShipmentCreated,
+            entity_type: Some(AuditEntityType::Shipment),
+            entity_id: Some(shipment_id.to_string()),
+            entity_label: Some(format!("Shipment {}", shipment_id)),
+            office_id: input.current_office_id,
+            office_label: input
+                .current_office_id
+                .map(|office_id| format!("Office {}", office_id)),
+            target_route: Some(format!("/app/admin/shipments/{}", shipment_id)),
+            metadata_json: Some(serde_json::json!({
+                "client_id": input.client_id.to_string(),
+                "status": status.to_string(),
+                "current_office_id": input.current_office_id.map(|value| value.to_string()),
+                "notes": input.notes,
+            })),
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(shipment_id)
 }

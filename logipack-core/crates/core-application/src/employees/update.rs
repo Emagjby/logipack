@@ -4,6 +4,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 
 #[derive(Debug, Clone)]
 pub struct UpdateEmployee {
@@ -18,6 +21,8 @@ pub enum UpdateEmployeeError {
     NotFound,
     #[error("{0}")]
     EmployeeError(EmployeeError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 /// Updates an employee record.
@@ -41,6 +46,24 @@ pub async fn update_employee(
             EmployeeError::RecordNotFound => UpdateEmployeeError::NotFound,
             other => UpdateEmployeeError::EmployeeError(other),
         })?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::EmployeeUpdated,
+            entity_type: Some(AuditEntityType::Employee),
+            entity_id: Some(input.id.to_string()),
+            entity_label: Some(format!("Employee {}", input.id)),
+            office_id: None,
+            office_label: None,
+            target_route: Some(format!("/app/admin/employees/{}", input.id)),
+            metadata_json: None,
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(input.id)
 }

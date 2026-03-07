@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 async fn cleanup(db: &DatabaseConnection) {
     let tables = [
+        "audit_events",
         "shipment_status_history",
         "shipments",
         "employee_offices",

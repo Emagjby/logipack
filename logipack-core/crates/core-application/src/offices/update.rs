@@ -4,6 +4,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 use crate::validation::office::{
     OfficeValidationError, validate_address, validate_city, validate_name,
 };
@@ -26,6 +29,8 @@ pub enum UpdateOfficeError {
     NotFound,
     #[error("{0}")]
     UpdateOfficeError(#[from] OfficeError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn update_office(
@@ -50,12 +55,46 @@ pub async fn update_office(
         validate_address(address)?;
     }
 
-    offices_repo::OfficesRepo::update_office(db, input.id, input.name, input.city, input.address)
-        .await
-        .map_err(|e| match e {
-            OfficeError::RecordNotFound => UpdateOfficeError::NotFound,
-            other => UpdateOfficeError::UpdateOfficeError(other),
-        })?;
+    let name = input.name.clone();
+    let city = input.city.clone();
+    let address = input.address.clone();
+
+    offices_repo::OfficesRepo::update_office(
+        db,
+        input.id,
+        name.clone(),
+        city.clone(),
+        address.clone(),
+    )
+    .await
+    .map_err(|e| match e {
+        OfficeError::RecordNotFound => UpdateOfficeError::NotFound,
+        other => UpdateOfficeError::UpdateOfficeError(other),
+    })?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::OfficeUpdated,
+            entity_type: Some(AuditEntityType::Office),
+            entity_id: Some(input.id.to_string()),
+            entity_label: name
+                .clone()
+                .or_else(|| Some(format!("Office {}", input.id))),
+            office_id: Some(input.id),
+            office_label: Some(format!("Office {}", input.id)),
+            target_route: Some(format!("/app/admin/offices/{}", input.id)),
+            metadata_json: Some(serde_json::json!({
+                "name": name,
+                "city": city,
+                "address": address,
+            })),
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(input.id)
 }

@@ -4,6 +4,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 
 #[derive(Debug, Error)]
 pub enum DeleteEmployeeError {
@@ -13,6 +16,8 @@ pub enum DeleteEmployeeError {
     NotFound,
     #[error("{0}")]
     EmployeeError(EmployeeError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn delete_employee(
@@ -31,6 +36,24 @@ pub async fn delete_employee(
             EmployeeError::RecordNotFound => DeleteEmployeeError::NotFound,
             other => DeleteEmployeeError::EmployeeError(other),
         })?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::EmployeeDeleted,
+            entity_type: Some(AuditEntityType::Employee),
+            entity_id: Some(id.to_string()),
+            entity_label: Some(format!("Employee {}", id)),
+            office_id: None,
+            office_label: None,
+            target_route: Some(format!("/app/admin/employees/{}", id)),
+            metadata_json: None,
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(id)
 }

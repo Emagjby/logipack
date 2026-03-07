@@ -4,6 +4,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 use crate::validation::client::{
     ClientValidationError, validate_email, validate_name, validate_phone,
 };
@@ -26,6 +29,8 @@ pub enum UpdateClientError {
     NotFound,
     #[error("{0}")]
     UpdateClientError(#[from] ClientError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn update_client(
@@ -48,12 +53,46 @@ pub async fn update_client(
 
     validate_phone(input.phone.as_deref())?;
 
-    clients_repo::ClientsRepo::update_client(db, input.id, input.name, input.phone, input.email)
-        .await
-        .map_err(|e| match e {
-            ClientError::RecordNotFound => UpdateClientError::NotFound,
-            other => UpdateClientError::UpdateClientError(other),
-        })?;
+    let name = input.name.clone();
+    let phone = input.phone.clone();
+    let email = input.email.clone();
+
+    clients_repo::ClientsRepo::update_client(
+        db,
+        input.id,
+        name.clone(),
+        phone.clone(),
+        email.clone(),
+    )
+    .await
+    .map_err(|e| match e {
+        ClientError::RecordNotFound => UpdateClientError::NotFound,
+        other => UpdateClientError::UpdateClientError(other),
+    })?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::ClientUpdated,
+            entity_type: Some(AuditEntityType::Client),
+            entity_id: Some(input.id.to_string()),
+            entity_label: name
+                .clone()
+                .or_else(|| Some(format!("Client {}", input.id))),
+            office_id: None,
+            office_label: None,
+            target_route: Some(format!("/app/admin/clients/{}", input.id)),
+            metadata_json: Some(serde_json::json!({
+                "name": name,
+                "phone": phone,
+                "email": email,
+            })),
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(input.id)
 }

@@ -4,6 +4,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::actor::ActorContext;
+use crate::audit::{
+    AuditActionKey, AuditEntityType, AuditError, AuditEventInput, emit_audit_event,
+};
 
 #[derive(Debug, Clone)]
 pub struct RemoveOffice {
@@ -21,6 +24,8 @@ pub enum RemoveOfficeError {
     OfficeNotFound,
     #[error("{0}")]
     RemoveError(#[from] EmployeeOfficeError),
+    #[error("audit error: {0}")]
+    Audit(#[from] AuditError),
 }
 
 pub async fn remove_office(
@@ -39,6 +44,27 @@ pub async fn remove_office(
             EmployeeOfficeError::OfficeNotFound => RemoveOfficeError::OfficeNotFound,
             other => RemoveOfficeError::RemoveError(other),
         })?;
+
+    emit_audit_event(
+        db,
+        actor,
+        AuditEventInput {
+            action_key: AuditActionKey::EmployeeRemovedFromOffice,
+            entity_type: Some(AuditEntityType::Employee),
+            entity_id: Some(input.employee_id.to_string()),
+            entity_label: Some(format!("Employee {}", input.employee_id)),
+            office_id: Some(input.office_id),
+            office_label: Some(format!("Office {}", input.office_id)),
+            target_route: Some(format!(
+                "/app/admin/employees/{}/offices",
+                input.employee_id
+            )),
+            metadata_json: None,
+            request_id: None,
+            occurred_at: None,
+        },
+    )
+    .await?;
 
     Ok(())
 }
