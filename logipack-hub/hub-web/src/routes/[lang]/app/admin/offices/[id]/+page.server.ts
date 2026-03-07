@@ -41,7 +41,7 @@ export const load: PageServerLoad = async ({ params, fetch, locals }) => {
 			return {
 				result: {
 					state: "error" as const,
-					message: "Unable to load office detail right now.",
+					message: "admin.offices.detail.load_failed",
 				},
 			};
 		}
@@ -50,10 +50,7 @@ export const load: PageServerLoad = async ({ params, fetch, locals }) => {
 		return {
 			result: {
 				state: "error" as const,
-				message:
-					e instanceof Error
-						? e.message
-						: "Unable to load office detail right now.",
+				message: "admin.offices.detail.load_failed",
 			},
 		};
 	}

@@ -66,14 +66,14 @@ export const actions: Actions = {
 			});
 			await client.delete(`/admin/clients/${params.id}`);
 
-			throw redirect(303, `/${params.lang ?? "en"}/admin/clients`);
+			throw redirect(303, `/${params.lang ?? "en"}/app/admin/clients`);
 		} catch (e) {
 			if (isRedirect(e)) {
 				throw e;
 			}
 
 			if (e instanceof HubApiError && e.status === 404) {
-				return fail(404, { submitError: "admin.clients.detail.not_found " });
+				return fail(404, { submitError: "admin.clients.detail.not_found" });
 			}
 
 			return fail(500, { submitError: "admin.clients.detail.delete_failed" });

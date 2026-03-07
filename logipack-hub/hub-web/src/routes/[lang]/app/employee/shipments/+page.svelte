@@ -143,7 +143,7 @@
 		</p>
 		{#if data.result.message}
 			<p class="mt-2 font-mono text-xs text-surface-600">
-				{data.result.message}
+				{$_(data.result.message)}
 			</p>
 		{/if}
 		<a

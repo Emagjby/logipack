@@ -17,7 +17,7 @@ function filterByQuery<
 	}
 
 	return items.filter((item) => {
-		`${item.id ?? ""}${item.name}${item.email ?? ""}${item.phone ?? ""}`
+		return `${item.id ?? ""}${item.name}${item.email ?? ""}${item.phone ?? ""}`
 			.toLowerCase()
 			.includes(needle);
 	});

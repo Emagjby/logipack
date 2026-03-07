@@ -113,8 +113,7 @@ export const load: PageServerLoad = async ({ parent, params, fetch, locals }) =>
 		return {
 			result: {
 				state: "error" as const,
-				message:
-					e instanceof Error ? e.message : "Unknown error",
+				message: "shipment.detail.load_failed",
 			},
 		};
 	}

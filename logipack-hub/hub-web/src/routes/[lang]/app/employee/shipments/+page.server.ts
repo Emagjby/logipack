@@ -53,8 +53,7 @@ export const load: PageServerLoad = async ({ parent, fetch, locals }) => {
 			result: {
 				state: "error" as const,
 				shipments: [] as [],
-				message:
-					e instanceof Error ? e.message : "shipments.error.generic",
+				message: "shipments.error.generic",
 			},
 		};
 	}

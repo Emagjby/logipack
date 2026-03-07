@@ -58,10 +58,7 @@ export const load: PageServerLoad = async ({ params, fetch, locals }) => {
 		return {
 			result: {
 				state: "error" as const,
-				message:
-					error instanceof Error
-						? error.message
-						: "admin.employees.offices.error.headline",
+				message: "admin.employees.offices.load_failed",
 			},
 		};
 	}
