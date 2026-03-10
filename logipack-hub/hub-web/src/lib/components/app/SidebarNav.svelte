@@ -6,6 +6,7 @@
 	type IconName =
 		| "dashboard"
 		| "shipments"
+		| "reports"
 		| "clients"
 		| "offices"
 		| "employees"
@@ -69,6 +70,12 @@
 							labelKey: "navbar.item.shipments",
 							href: `${adminBase}/shipments`,
 							icon: "shipments",
+							match: "prefix",
+						},
+						{
+							labelKey: "navbar.item.reports",
+							href: `${adminBase}/reports`,
+							icon: "reports",
 							match: "prefix",
 						},
 					],

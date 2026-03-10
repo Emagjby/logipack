@@ -30,6 +30,7 @@
 		offices: "navbar.page.offices",
 		employees: "navbar.page.employees",
 		audit: "navbar.page.audit_log",
+		reports: "navbar.page.reports",
 	};
 
 	const roleLabelKeys: Record<string, string> = {

@@ -5,6 +5,7 @@
 	type IconName =
 		| "dashboard"
 		| "shipments"
+		| "reports"
 		| "clients"
 		| "offices"
 		| "employees"
@@ -50,6 +51,21 @@
 	>
 		<path d="M3 7l7-4 7 4v6l-7 4-7-4V7z" />
 		<path d="M3 7l7 4m0 0l7-4m-7 4v7" />
+	</svg>
+{:else if name === "reports"}
+	<svg
+		class={iconClass}
+		viewBox="0 0 20 20"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="1.5"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	>
+		<path d="M4 16V9" />
+		<path d="M10 16V4" />
+		<path d="M16 16v-6" />
+		<path d="M3 16h14" />
 	</svg>
 {:else if name === "clients"}
 	<svg

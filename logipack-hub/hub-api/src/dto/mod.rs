@@ -1,3 +1,4 @@
+pub mod analytics;
 pub mod audit;
 pub mod clients;
 pub mod employee_offices;
@@ -5,4 +6,5 @@ pub mod employees;
 pub mod ensure_user;
 pub mod me;
 pub mod offices;
+pub mod reports;
 pub mod shipments;

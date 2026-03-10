@@ -1,5 +1,7 @@
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QueryOrder,
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -119,5 +121,24 @@ impl EmployeeOfficesRepo {
 
         let office_ids = rows.into_iter().map(|r| r.office_id).collect();
         Ok(office_ids)
+    }
+
+    /// Returns a deterministic current office selection for an employee.
+    /// The lowest office UUID is used when multiple assignments exist.
+    pub async fn current_office_id(
+        db: &DatabaseConnection,
+        employee_id: Uuid,
+    ) -> Result<Option<Uuid>, EmployeeOfficeError> {
+        if !Self::employee_exists(db, employee_id).await? {
+            return Err(EmployeeOfficeError::EmployeeNotFound);
+        }
+
+        let row = employee_offices::Entity::find()
+            .filter(employee_offices::Column::EmployeeId.eq(employee_id))
+            .order_by_asc(employee_offices::Column::OfficeId)
+            .one(db)
+            .await?;
+
+        Ok(row.map(|value| value.office_id))
     }
 }

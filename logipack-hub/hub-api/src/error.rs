@@ -4,7 +4,10 @@ use core_application::shipments::{
 };
 use core_application::users::ensure_user::EnsureUserError;
 use core_application::users::me::MeError;
-use core_data::repository::shipments_repo::ShipmentSnapshotError;
+use core_data::repository::{
+    analytics_repo::AnalyticsQueryError, reporting_repo::ReportingQueryError,
+    shipments_repo::ShipmentSnapshotError,
+};
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -95,6 +98,22 @@ impl From<ShipmentSnapshotError> for ApiError {
     fn from(value: ShipmentSnapshotError) -> Self {
         match value {
             ShipmentSnapshotError::DbError(db) => db.into(),
+        }
+    }
+}
+
+impl From<ReportingQueryError> for ApiError {
+    fn from(value: ReportingQueryError) -> Self {
+        match value {
+            ReportingQueryError::Db(err) => err.into(),
+        }
+    }
+}
+
+impl From<AnalyticsQueryError> for ApiError {
+    fn from(value: AnalyticsQueryError) -> Self {
+        match value {
+            AnalyticsQueryError::Db(err) => err.into(),
         }
     }
 }

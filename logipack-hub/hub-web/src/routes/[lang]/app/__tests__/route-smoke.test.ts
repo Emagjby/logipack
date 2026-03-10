@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+import { ensureI18n } from "$lib/i18n";
 
 const HUB_API_BASE = "https://hub-api.test";
 process.env.HUB_API_BASE = HUB_API_BASE;
@@ -362,6 +363,58 @@ describe("app route smoke", () => {
 		expect(result.offices).toHaveLength(1);
 	});
 
+	test("admin dashboard load resolves i18n interpolation values", async () => {
+		await ensureI18n("bg");
+
+		const { load } = await import("../admin/+page.server.ts");
+		const fetch = makeFetchMock({
+			"GET /analytics/admin/overview?span=30d": () =>
+				jsonResponse({
+					total_shipments: 12,
+					shipments_vs_last_period: 3,
+					shipments_timeseries: [{ bucket_start: "2026-03-10", value: 4 }],
+					total_clients: 8,
+					clients_vs_last_period: 1,
+					clients_timeseries: [{ bucket_start: "2026-03-10", value: 2 }],
+					total_offices: 4,
+					offices_vs_last_period: 0,
+					offices_timeseries: [{ bucket_start: "2026-03-10", value: 1 }],
+					total_employees: 7,
+					assigned_employees: 5,
+					unassigned_employees: 2,
+					employees_timeseries: [{ bucket_start: "2026-03-10", value: 7 }],
+				}),
+			"GET /reports/shipments-by-status": () =>
+				jsonResponse({
+					report_name: "shipments-by-status",
+					generated_at: "2026-03-10T09:00:00.000Z",
+					columns: ["status", "shipment_count"],
+					rows: [["DELIVERED", 4]],
+				}),
+			"GET /admin/audit?limit=8": () =>
+				jsonResponse({
+					events: [],
+					page: {
+						limit: 8,
+						next_cursor: null,
+						has_next: false,
+					},
+				}),
+		});
+
+		const result = (await load({
+			url: new URL("https://app.test/bg/app/admin"),
+			params: { lang: "bg" },
+			fetch,
+			locals: makeLocals("admin"),
+		} as any)) as any;
+
+		expect(result.kpis[0]?.change).toBe("+3 спрямо предходните 30 дни");
+		expect(result.kpis[0]?.context).toBe("В 4 офиса");
+		expect(result.kpis[3]?.change).toBe("5 назначени / 2 неназначени");
+		expect(result.kpis[3]?.sparkline).toEqual([7]);
+	});
+
 	test("employee shipment create action uses resolved office and redirects to employee detail", async () => {
 		const { actions } = await import("../employee/shipments/new/+page.server.ts");
 		const fetch = makeFetchMock({
@@ -405,6 +458,79 @@ describe("app route smoke", () => {
 			403,
 			"error.details.employee_only",
 		);
+	});
+
+	test("employee dashboard load resolves i18n interpolation values", async () => {
+		await ensureI18n("bg");
+
+		const { load } = await import("../employee/+page.server.ts");
+		const fetch = makeFetchMock({
+			"GET /analytics/employee/overview?span=7d": () =>
+				jsonResponse({
+					active_shipments: 6,
+					active_vs_last_period: 2,
+					active_timeseries: [{ bucket_start: "2026-03-10", value: 6 }],
+					pending_shipments: 3,
+					pending_vs_last_period: -1,
+					pending_timeseries: [{ bucket_start: "2026-03-10", value: 3 }],
+					deliveries_today: 2,
+					deliveries_vs_last_period: 1,
+					deliveries_timeseries: [{ bucket_start: "2026-03-10", value: 2 }],
+				}),
+			"GET /shipments": () =>
+				jsonResponse([
+					{
+						id: "SHP-1001",
+						client_id: "client-acme",
+						current_status: "NEW",
+						current_office_id: "office-sofia",
+						created_at: "2026-03-07T10:00:00.000Z",
+						updated_at: "2026-03-07T11:00:00.000Z",
+					},
+				]),
+		});
+
+		const result = (await load({
+			parent: async () => ({
+				session: makeSession("employee", {
+					office_id: "office-sofia",
+					current_office_id: "office-sofia",
+					current_office_name: "Sofia HQ",
+				}),
+			}),
+			url: new URL("https://app.test/bg/app/employee"),
+			fetch,
+			locals: makeLocals("employee", {
+				office_id: "office-sofia",
+				current_office_id: "office-sofia",
+				current_office_name: "Sofia HQ",
+			}),
+		} as any)) as any;
+
+		expect(result.kpis[0]?.change).toBe("+2 спрямо предходните 7 дни");
+		expect(result.kpis[0]?.context).toBe("Офис: Sofia HQ");
+		expect(result.kpis[1]?.sparkline).toEqual([3]);
+		expect(result.kpis[2]?.change).toBe("+1 спрямо вчера");
+	});
+
+	test("admin reports load uses reports-specific error fallback key", async () => {
+		const { load } = await import("../admin/reports/+page.server.ts");
+		const fetch = makeFetchMock({
+			"GET /reports/shipments-by-status": () =>
+				jsonResponse(
+					{ code: "report_failed", message: "Failed to load report data." },
+					500,
+				),
+		});
+
+		const result = (await load({
+			url: new URL("https://app.test/en/app/admin/reports"),
+			fetch,
+			locals: makeLocals("admin"),
+		} as any)) as any;
+
+		expect(result.result.state).toBe("error");
+		expect(result.result.message).toBe("reports.error.generic");
 	});
 
 	test("admin audit load returns next-page href from backend pagination", async () => {

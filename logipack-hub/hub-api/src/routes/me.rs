@@ -1,6 +1,4 @@
 use axum::{Json, Router, extract::State, routing::get};
-use core_data::entity::employee_offices;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use uuid::Uuid;
 
 use crate::{dto::me::MeResponse, error::ApiError, state::AppState};
@@ -31,12 +29,13 @@ async fn me_handler(
         .collect::<Vec<_>>();
 
     let current_office_id = if let Some(employee_id) = actor.employee_id {
-        employee_offices::Entity::find()
-            .filter(employee_offices::Column::EmployeeId.eq(employee_id))
-            .one(&state.db)
-            .await
-            .map_err(|e| ApiError::internal(e.to_string()))?
-            .map(|row| row.office_id.to_string())
+        core_data::repository::employee_offices_repo::EmployeeOfficesRepo::current_office_id(
+            &state.db,
+            employee_id,
+        )
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .map(|value| value.to_string())
     } else {
         None
     };

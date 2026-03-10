@@ -3,6 +3,7 @@
 	import { goto } from "$app/navigation";
 	import { _ } from "svelte-i18n";
 	import ShipmentStatusBadge from "$lib/components/app/ShipmentStatusBadge.svelte";
+	import { compactId } from "$lib/utils/idDisplay";
 	import {
 		normalizeShipmentStatus,
 		statusDotClass,
@@ -305,9 +306,10 @@
 					onclick={() => {
 						lookupValue = id;
 					}}
+					title={id}
 					class="cursor-pointer rounded-md bg-surface-800 px-2 py-1 font-mono text-xs text-surface-400 transition-colors hover:bg-surface-700 hover:text-surface-200"
 				>
-					{id}
+					{compactId(id)}
 				</button>
 			{/each}
 		</div>
@@ -408,7 +410,8 @@
 								</td>
 								<td
 									class="px-5 py-3 font-mono text-sm text-accent"
-									>{shipment.id}</td
+									title={shipment.id}
+									>{compactId(shipment.id)}</td
 								>
 								<td class="px-5 py-3 text-sm text-surface-200"
 									>{shipment.destination}</td
@@ -478,8 +481,8 @@
 							></span>
 							<div class="min-w-0 flex-1">
 								<div class="text-sm text-surface-200">
-									<span class="font-mono text-accent"
-										>{item.shipmentId}</span
+									<span class="font-mono text-accent" title={item.shipmentId}
+										>{compactId(item.shipmentId)}</span
 									>
 									{item.title}
 								</div>

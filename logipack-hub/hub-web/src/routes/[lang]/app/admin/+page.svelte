@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from "./$types";
-	import { goto } from "$app/navigation";
+	import { goto, invalidateAll } from "$app/navigation";
 	import { _ } from "svelte-i18n";
 	import { onDestroy } from "svelte";
 
@@ -8,7 +8,6 @@
 
 	let lang = $derived(data.pathname.split("/")[1] || "en");
 	let isRefreshing = $state(false);
-	let lastUpdated = $state(new Date());
 	let minutesTick = $state(0);
 
 	type KpiCard = {
@@ -31,9 +30,12 @@
 	};
 
 	type RecentEvent = {
+		id: string;
 		eventKey: string;
 		eventValues?: Record<string, string>;
+		eventTitle: string;
 		actor: string;
+		actorTitle: string;
 		time: string;
 		dotClass: string;
 		href: string;
@@ -50,97 +52,8 @@
 		return `${$_("greet.evening")}, ${firstName}`;
 	});
 
-	// TODO: Replace kpis mock data (KpiCard[] using $_ and lang) with live API metrics.
-	let kpis = $derived<KpiCard[]>([
-		{
-			label: $_("admin.dashboard.kpi.total_shipments"),
-			value: 248,
-			change: $_("admin.dashboard.kpi.total_shipments_change", {
-				values: { count: 12 },
-			}),
-			context: $_("admin.dashboard.kpi.total_shipments_context", {
-				values: { count: 14 },
-			}),
-			trend: "up",
-			severity: "good",
-			sparkline: [208, 214, 219, 225, 232, 240, 248],
-			href: `/${lang}/app/admin/shipments`,
-		},
-		{
-			label: $_("admin.dashboard.kpi.total_clients"),
-			value: 64,
-			change: $_("admin.dashboard.kpi.total_clients_change", {
-				values: { count: 3 },
-			}),
-			context: $_("admin.dashboard.kpi.total_clients_context", {
-				values: { count: 4 },
-			}),
-			trend: "up",
-			severity: "good",
-			sparkline: [54, 55, 57, 58, 60, 62, 64],
-			href: `/${lang}/app/admin/clients`,
-		},
-		{
-			label: $_("admin.dashboard.kpi.total_offices"),
-			value: 14,
-			change: $_("admin.dashboard.kpi.total_offices_change", {
-				values: { count: 1 },
-			}),
-			context: $_("admin.dashboard.kpi.total_offices_context", {
-				values: { count: 2 },
-			}),
-			trend: "up",
-			severity: "good",
-			sparkline: [11, 11, 12, 12, 13, 13, 14],
-			href: `/${lang}/app/admin/offices`,
-		},
-		{
-			label: $_("admin.dashboard.kpi.total_employees"),
-			value: 89,
-			change: $_("admin.dashboard.kpi.total_employees_change", {
-				values: { count: 5 },
-			}),
-			context: $_("admin.dashboard.kpi.total_employees_context", {
-				values: { count: 10 },
-			}),
-			trend: "neutral",
-			severity: "warn",
-			sparkline: [84, 85, 85, 86, 87, 88, 89],
-			href: `/${lang}/app/admin/employees`,
-		},
-	]);
-
-	// TODO: Replace shipmentStatus mock data with API-backed status distribution.
-	let shipmentStatus = $derived<DonutSlice[]>([
-		{
-			label: $_("admin.dashboard.status.created"),
-			value: 62,
-			strokeClass: "text-sky-400",
-			dotClass: "bg-sky-400",
-			href: `/${lang}/app/admin/shipments?status=new`,
-		},
-		{
-			label: $_("admin.dashboard.status.in_transit"),
-			value: 94,
-			strokeClass: "text-amber-400",
-			dotClass: "bg-amber-400",
-			href: `/${lang}/app/admin/shipments?status=in_transit`,
-		},
-		{
-			label: $_("admin.dashboard.status.delivered"),
-			value: 76,
-			strokeClass: "text-accent",
-			dotClass: "bg-accent",
-			href: `/${lang}/app/admin/shipments?status=delivered`,
-		},
-		{
-			label: $_("admin.dashboard.status.cancelled"),
-			value: 16,
-			strokeClass: "text-rose-400",
-			dotClass: "bg-rose-400",
-			href: `/${lang}/app/admin/shipments?status=cancelled`,
-		},
-	]);
+	let kpis = $derived<KpiCard[]>(data.kpis);
+	let shipmentStatus = $derived<DonutSlice[]>(data.shipmentStatus);
 
 	let totalShipments = $derived(
 		shipmentStatus.reduce((sum, status) => sum + status.value, 0),
@@ -149,7 +62,7 @@
 		minutesTick;
 		if (typeof globalThis.window === "undefined")
 			return $_("common.just_now");
-		const diff = Date.now() - new Date(lastUpdated).getTime();
+		const diff = Date.now() - new Date(data.lastRefresh).getTime();
 		const mins = Math.max(0, Math.floor(diff / 60000));
 		if (mins === 0) return $_("common.just_now");
 		return $_("common.minutes_ago", { values: { minutes: mins } });
@@ -171,86 +84,15 @@
 		});
 	});
 
-	// TODO: Replace recentEvents mock data with live admin audit events.
-	let recentEvents = $derived<RecentEvent[]>([
-		{
-			eventKey: "admin.dashboard.events.shipment_created",
-			eventValues: { id: "SHP-1204" },
-			actor: "Nikolay Georgiev",
-			time: "10:42",
-			dotClass: "bg-accent",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.client_updated",
-			eventValues: { id: "C-208" },
-			actor: "Maria Petrova",
-			time: "10:16",
-			dotClass: "bg-sky-400",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.office_added",
-			eventValues: { name: "Plovdiv North" },
-			actor: "Ivan Dimitrov",
-			time: "09:58",
-			dotClass: "bg-amber-400",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.employee_assigned",
-			eventValues: { office: "Sofia HQ" },
-			actor: "Elena Stoyanova",
-			time: "09:31",
-			dotClass: "bg-violet-400",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.shipment_delivered",
-			actor: $_("admin.dashboard.actor.system"),
-			time: "09:04",
-			dotClass: "bg-rose-400",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.shipment_created",
-			eventValues: { id: "SHP-1203" },
-			actor: "Nikolay Georgiev",
-			time: "08:46",
-			dotClass: "bg-accent",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.client_updated",
-			eventValues: { id: "C-207" },
-			actor: "Maria Petrova",
-			time: "08:21",
-			dotClass: "bg-sky-400",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.employee_assigned",
-			eventValues: { office: "Varna Port" },
-			actor: "Elena Stoyanova",
-			time: "07:57",
-			dotClass: "bg-violet-400",
-			href: `/${lang}/app/admin/audit`,
-		},
-		{
-			eventKey: "admin.dashboard.events.shipment_delivered",
-			actor: $_("admin.dashboard.actor.system"),
-			time: "07:34",
-			dotClass: "bg-rose-400",
-			href: `/${lang}/app/admin/audit`,
-		},
-	]);
+	let recentEvents = $derived<RecentEvent[]>(data.recentEvents);
 
-	function handleRefresh() {
+	async function handleRefresh() {
 		isRefreshing = true;
-		setTimeout(() => {
-			lastUpdated = new Date();
+		try {
+			await invalidateAll();
+		} finally {
 			isRefreshing = false;
-		}, 600);
+		}
 	}
 
 	function sparklinePoints(values: number[]): { line: string; area: string } {
@@ -530,7 +372,7 @@
 			</div>
 		</div>
 		<div class="overflow-x-auto">
-			<table class="w-full min-w-[420px]">
+			<table class="w-full min-w-[420px] table-fixed">
 				<thead>
 					<tr>
 						<th
@@ -539,33 +381,41 @@
 							{$_("admin.dashboard.table.event")}
 						</th>
 						<th
-							class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+							class="w-40 px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 						>
 							{$_("admin.dashboard.table.actor")}
 						</th>
 						<th
-							class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+							class="w-20 px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 						>
 							{$_("admin.dashboard.table.time")}
 						</th>
 					</tr>
 				</thead>
 				<tbody>
-					{#each recentEvents as event (event.eventKey + event.time)}
+					{#each recentEvents as event (event.id)}
 						<tr
 							onclick={() => goto(event.href)}
 							class="group cursor-pointer border-t border-surface-800 transition-colors hover:bg-surface-800/50"
 						>
 							<td class="px-5 py-3 text-sm text-surface-200">
-								<div class="flex items-center gap-2">
+								<div class="flex min-w-0 items-center gap-2">
 									<span
-										class={["h-1.5 w-1.5 rounded-full", event.dotClass]}
+										class={["h-1.5 w-1.5 shrink-0 rounded-full", event.dotClass]}
 									></span>
-									<span>{$_(event.eventKey, { values: event.eventValues })}</span>
+									<span class="block min-w-0 truncate" title={event.eventTitle}
+										>{$_(event.eventKey, { values: event.eventValues })}</span
+									>
 								</div>
 							</td>
-							<td class="px-5 py-3 text-sm text-surface-400">{event.actor}</td>
-							<td class="px-5 py-3 text-sm text-surface-400">{event.time}</td>
+							<td class="px-5 py-3 text-sm text-surface-400">
+								<span class="block truncate" title={event.actorTitle}
+									>{event.actor}</span
+								>
+							</td>
+							<td class="px-5 py-3 text-sm text-surface-400 whitespace-nowrap"
+								>{event.time}</td
+							>
 						</tr>
 					{/each}
 				</tbody>
