@@ -6,7 +6,7 @@ const APP_ROOT = path.resolve(process.cwd(), "src/routes/[lang]/app");
 const EN_LOCALE_PATH = path.resolve(process.cwd(), "src/lib/i18n/locales/en.json");
 const BG_LOCALE_PATH = path.resolve(process.cwd(), "src/lib/i18n/locales/bg.json");
 const TRANSLATION_KEY_PATTERN =
-	/^(admin|employee|shipment|shipments|office|client|error)\.[a-z0-9_.-]+$/;
+	/^(admin|employee|shipment|shipments|office|client|reports|error)\.[a-z0-9_.-]+$/;
 
 function walk(dir: string): string[] {
 	const entries = readdirSync(dir, { withFileTypes: true });
@@ -66,7 +66,8 @@ describe("app cutover regression checks", () => {
 			string,
 			unknown
 		>;
-		const keyPattern = /"((?:admin|employee|shipment|shipments|office|client|error)\.[^"]+)"/g;
+		const keyPattern =
+			/"((?:admin|employee|shipment|shipments|office|client|reports|error)\.[^"]+)"/g;
 		const keys = new Set<string>();
 
 		for (const file of routeServerFiles) {

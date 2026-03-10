@@ -39,6 +39,8 @@ pub fn router(cfg: Config, state: AppState) -> Router {
     let protected_router = Router::new()
         .merge(routes::ensure_user::router())
         .merge(routes::me::router())
+        .nest("/analytics", routes::analytics::router())
+        .nest("/reports", routes::reports::router())
         .nest("/shipments", routes::shipments::router())
         .nest("/admin", routes::admin::router());
     let protected_router = apply_auth_layer(protected_router, &cfg);
