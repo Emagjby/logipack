@@ -1,0 +1,52 @@
+flowchart LR
+    EMP["Служител"]
+    ADMIN["Администратор"]
+
+    subgraph SYS["Система LogiPack"]
+        direction LR
+
+        subgraph COMMON["Общи и оперативни действия"]
+            direction TB
+            LOGIN["Вход в системата"]
+            VIEW["Преглед на пратки"]
+            CREATE["Създаване на пратка"]
+            STATUS["Промяна на статус на пратка<br/>при позволени условия"]
+            HISTORY["Преглед на история на пратка"]
+        end
+
+        subgraph MGMT["Административни действия"]
+            direction TB
+            CLIENTS["Управление на клиенти"]
+            OFFICES["Управление на офиси"]
+            STAFF["Управление на служители"]
+            ROLES["Управление на роли"]
+            REPORTS["Извличане на справки"]
+            AUDIT["Преглед на одитни записи"]
+        end
+    end
+
+    EMP --- LOGIN
+    EMP --- VIEW
+    EMP --- CREATE
+    EMP --- STATUS
+    EMP --- HISTORY
+
+    ADMIN --- LOGIN
+    ADMIN --- VIEW
+    ADMIN --- CREATE
+    ADMIN --- STATUS
+    ADMIN --- HISTORY
+    ADMIN --- CLIENTS
+    ADMIN --- OFFICES
+    ADMIN --- STAFF
+    ADMIN --- ROLES
+    ADMIN --- REPORTS
+    ADMIN --- AUDIT
+
+    classDef actor fill:#e7f0fb,stroke:#245ea8,color:#0f2f57,stroke-width:1.5px;
+    classDef usecase fill:#fff1cc,stroke:#a66b00,color:#5c3b00,stroke-width:1.5px;
+    classDef zone fill:#d9f4e4,stroke:#1f7a4d,color:#0e3b24,stroke-width:1.5px;
+
+    class EMP,ADMIN actor;
+    class LOGIN,VIEW,CREATE,STATUS,HISTORY,CLIENTS,OFFICES,STAFF,ROLES,REPORTS,AUDIT usecase;
+    class SYS,COMMON,MGMT zone;

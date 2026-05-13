@@ -12,6 +12,11 @@
 
 	let lang = $derived(page.params.lang || "en");
 	let events = $derived(data.result.state === "ok" ? data.result.events : []);
+	let pageSize = $derived(data.result.limit);
+	let firstPaginationPage = $derived(data.paginationPages[0] ?? data.currentPage);
+	let lastPaginationPage = $derived(
+		data.paginationPages[data.paginationPages.length - 1] ?? data.currentPage,
+	);
 	let dateTimeFormat = $derived.by(
 		() =>
 			new Intl.DateTimeFormat(lang, {
@@ -23,6 +28,23 @@
 				hour12: false,
 			}),
 	);
+
+	const entityTypeOptions = ["shipment", "office", "client", "employee"];
+	const actionOptions = [
+		"shipment.created",
+		"shipment.status_updated",
+		"office.created",
+		"office.updated",
+		"office.deleted",
+		"client.created",
+		"client.updated",
+		"client.deleted",
+		"employee.created",
+		"employee.updated",
+		"employee.deleted",
+		"employee.assigned_to_office",
+		"employee.removed_from_office",
+	];
 
 	function formatTime(iso: string): string {
 		const timestamp = new Date(iso);
@@ -239,6 +261,26 @@
 				return null;
 		}
 	}
+
+	function pageHref(pageNumber: number): string {
+		const url = new URL(page.url);
+		url.searchParams.delete("cursor");
+		url.searchParams.delete("prev");
+		url.searchParams.set("page", String(pageNumber));
+		url.searchParams.set("limit", String(pageSize));
+
+		return `${url.pathname}${url.search}`;
+	}
+
+	function hasFilters(): boolean {
+		return Boolean(
+			data.filters.actor ||
+				data.filters.entityType ||
+				data.filters.action ||
+				data.filters.from ||
+				data.filters.to,
+		);
+	}
 </script>
 
 {#if data.result.state === "error"}
@@ -280,9 +322,108 @@
 		</p>
 	</section>
 
+	<form
+		method="GET"
+		class="stagger stagger-2 mt-6 rounded-xl border border-surface-700/50 bg-surface-900 p-5"
+	>
+		<input type="hidden" name="limit" value={pageSize} />
+
+		<div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_auto]">
+			<label class="flex flex-col gap-2 text-sm text-surface-200">
+				<span class="text-xs font-medium uppercase tracking-wider text-surface-400">
+					{$_("admin.audit.filters.actor")}
+				</span>
+				<input
+					type="search"
+					name="actor"
+					value={data.filters.actor ?? ""}
+					placeholder={$_("admin.audit.filters.actor_placeholder")}
+					class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors placeholder:text-surface-600 focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
+				/>
+			</label>
+
+			<label class="flex flex-col gap-2 text-sm text-surface-200">
+				<span class="text-xs font-medium uppercase tracking-wider text-surface-400">
+					{$_("admin.audit.filters.type")}
+				</span>
+				<select
+					name="entity_type"
+					value={data.filters.entityType ?? ""}
+					class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
+				>
+					<option value="">{$_("admin.audit.filters.any_type")}</option>
+					{#each entityTypeOptions as entityType (entityType)}
+						<option value={entityType}>
+							{$_(`admin.audit.filters.type.${entityType}`)}
+						</option>
+					{/each}
+				</select>
+			</label>
+
+			<label class="flex flex-col gap-2 text-sm text-surface-200">
+				<span class="text-xs font-medium uppercase tracking-wider text-surface-400">
+					{$_("admin.audit.filters.action")}
+				</span>
+				<select
+					name="action"
+					value={data.filters.action ?? ""}
+					class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
+				>
+					<option value="">{$_("admin.audit.filters.any_action")}</option>
+					{#each actionOptions as action (action)}
+						<option value={action}>
+							{$_(`admin.audit.filters.action.${action}`)}
+						</option>
+					{/each}
+				</select>
+			</label>
+
+			<label class="flex flex-col gap-2 text-sm text-surface-200">
+				<span class="text-xs font-medium uppercase tracking-wider text-surface-400">
+					{$_("admin.audit.filters.from")}
+				</span>
+				<input
+					type="date"
+					name="from"
+					value={data.filters.from ?? ""}
+					class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
+				/>
+			</label>
+
+			<label class="flex flex-col gap-2 text-sm text-surface-200">
+				<span class="text-xs font-medium uppercase tracking-wider text-surface-400">
+					{$_("admin.audit.filters.to")}
+				</span>
+				<input
+					type="date"
+					name="to"
+					value={data.filters.to ?? ""}
+					class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
+				/>
+			</label>
+
+			<div class="flex items-end gap-2 md:col-span-2 xl:col-span-1">
+				<button
+					type="submit"
+					class="inline-flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover xl:flex-none"
+				>
+					{$_("admin.audit.filters.apply")}
+				</button>
+				{#if hasFilters()}
+					<a
+						href={`/${lang}/app/admin/audit?limit=${pageSize}`}
+						class="inline-flex items-center justify-center rounded-lg border border-surface-700 bg-surface-900 px-3 py-2 text-sm font-semibold text-surface-100 transition-colors hover:border-surface-500 hover:bg-surface-800"
+					>
+						{$_("admin.audit.filters.clear")}
+					</a>
+				{/if}
+			</div>
+		</div>
+	</form>
+
 	{#if data.result.state === "empty"}
 		<div
-			class="stagger stagger-2 mt-6 flex flex-col items-center rounded-xl border border-surface-700/50 bg-surface-900 py-20 text-center"
+			class="stagger stagger-3 mt-6 flex flex-col items-center rounded-xl border border-surface-700/50 bg-surface-900 py-20 text-center"
 		>
 			<div
 				class="flex h-12 w-12 items-center justify-center rounded-full bg-surface-800"
@@ -307,7 +448,7 @@
 		</div>
 	{:else}
 		<div
-			class="stagger stagger-2 mt-4 overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900"
+			class="stagger stagger-3 mt-4 overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900"
 		>
 			<div class="overflow-x-auto">
 				<table class="w-full min-w-[720px]">
@@ -373,17 +514,153 @@
 					</tbody>
 				</table>
 			</div>
-		</div>
 
-		{#if data.nextPageHref}
-			<div class="stagger stagger-3 mt-4 flex justify-end">
-				<a
-					href={data.nextPageHref}
-					class="rounded-lg border border-surface-700 bg-surface-900 px-3 py-1.5 text-xs font-semibold text-surface-100 transition-colors hover:border-surface-500 hover:bg-surface-800"
+			<div
+				class="flex flex-col gap-3 border-t border-surface-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+			>
+				<div class="text-xs text-surface-600">
+					{$_("admin.audit.pagination.summary", {
+						values: {
+							count: events.length,
+							total: data.result.totalCount ?? events.length,
+						},
+					})}
+				</div>
+
+				<nav
+					class="flex items-center gap-2"
+					aria-label={$_("admin.audit.pagination.label")}
 				>
-					{$_("admin.audit.pagination.next")}
-				</a>
+					{#if data.previousPageHref}
+						<a
+							href={data.previousPageHref}
+							class="inline-flex items-center gap-1.5 rounded-lg border border-surface-700 bg-surface-900 px-3 py-1.5 text-xs font-semibold text-surface-100 transition-colors hover:border-surface-500 hover:bg-surface-800"
+						>
+							<svg
+								class="h-3.5 w-3.5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M15 19l-7-7 7-7"
+								/>
+							</svg>
+							{$_("admin.audit.pagination.previous")}
+						</a>
+					{:else}
+						<span
+							class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-surface-800 bg-surface-900/60 px-3 py-1.5 text-xs font-semibold text-surface-700"
+							aria-disabled="true"
+						>
+							<svg
+								class="h-3.5 w-3.5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M15 19l-7-7 7-7"
+								/>
+							</svg>
+							{$_("admin.audit.pagination.previous")}
+						</span>
+					{/if}
+
+
+					<div class="flex items-center gap-1" aria-hidden="false">
+						{#if firstPaginationPage > 1}
+							<a
+								href={pageHref(1)}
+								class="flex h-8 min-w-8 items-center justify-center rounded-lg border border-surface-700 bg-surface-900 px-2 text-xs font-semibold text-surface-100 transition-colors hover:border-surface-500 hover:bg-surface-800"
+							>
+								1
+							</a>
+							{#if firstPaginationPage > 2}
+								<span class="px-1 text-xs font-semibold text-surface-600">...</span>
+							{/if}
+						{/if}
+
+						{#each data.paginationPages as pageNumber (pageNumber)}
+							{#if pageNumber === data.currentPage}
+								<span
+									class="flex h-8 min-w-8 items-center justify-center rounded-lg border border-accent bg-accent px-2 text-xs font-semibold text-surface-950"
+									aria-current="page"
+								>
+									{pageNumber}
+								</span>
+							{:else}
+								<a
+									href={pageHref(pageNumber)}
+									class="flex h-8 min-w-8 items-center justify-center rounded-lg border border-surface-700 bg-surface-900 px-2 text-xs font-semibold text-surface-100 transition-colors hover:border-surface-500 hover:bg-surface-800"
+								>
+									{pageNumber}
+								</a>
+							{/if}
+						{/each}
+
+						{#if data.totalPages && lastPaginationPage < data.totalPages}
+							{#if lastPaginationPage < data.totalPages - 1}
+								<span class="px-1 text-xs font-semibold text-surface-600">...</span>
+							{/if}
+							<a
+								href={pageHref(data.totalPages)}
+								class="flex h-8 min-w-8 items-center justify-center rounded-lg border border-surface-700 bg-surface-900 px-2 text-xs font-semibold text-surface-100 transition-colors hover:border-surface-500 hover:bg-surface-800"
+							>
+								{data.totalPages}
+							</a>
+						{/if}
+					</div>
+
+					{#if data.nextPageHref}
+						<a
+							href={data.nextPageHref}
+							class="inline-flex items-center gap-1.5 rounded-lg border border-surface-700 bg-surface-900 px-3 py-1.5 text-xs font-semibold text-surface-100 transition-colors hover:border-surface-500 hover:bg-surface-800"
+						>
+							{$_("admin.audit.pagination.next")}
+							<svg
+								class="h-3.5 w-3.5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M9 5l7 7-7 7"
+								/>
+							</svg>
+						</a>
+					{:else}
+						<span
+							class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-surface-800 bg-surface-900/60 px-3 py-1.5 text-xs font-semibold text-surface-700"
+							aria-disabled="true"
+						>
+							{$_("admin.audit.pagination.next")}
+							<svg
+								class="h-3.5 w-3.5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M9 5l7 7-7 7"
+								/>
+							</svg>
+						</span>
+					{/if}
+				</nav>
 			</div>
-		{/if}
+		</div>
 	{/if}
 {/if}

@@ -25,6 +25,16 @@ export async function listOffices(
 	return mapListOfficesResponseDto(res.data);
 }
 
+export async function listAccessibleOffices(
+	client: HubApiClient,
+	timeoutMs = 10_000,
+): Promise<OfficeListItem[]> {
+	const res = await client.get<ListOfficesResponseDto>("/offices", {
+		timeoutMs,
+	});
+	return mapListOfficesResponseDto(res.data);
+}
+
 export async function getOffice(
 	client: HubApiClient,
 	officeId: string,

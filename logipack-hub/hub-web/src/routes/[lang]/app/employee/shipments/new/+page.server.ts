@@ -2,6 +2,7 @@ import { HUB_API_BASE } from "$env/static/private";
 import { createHubApiClient, HubApiError } from "$lib/server/hubApi";
 import { createShipment } from "$lib/server/hubApi/services/shipments";
 import { getMeContext } from "$lib/server/hubApi/services/identity";
+import { listAccessibleClients } from "$lib/server/hubApi/services/clients";
 import { resolveEmployeeOffice } from "$lib/server/employeeOffice";
 import {
 	hasShipmentCreateErrors,
@@ -48,7 +49,21 @@ export const load: PageServerLoad = async ({ parent, fetch, locals }) => {
 		fetch,
 		locals,
 	});
+
+	let clients: Awaited<ReturnType<typeof listAccessibleClients>> = [];
+	try {
+		const client = createHubApiClient({
+			fetch,
+			locals,
+			baseUrl: HUB_API_BASE,
+		});
+		clients = await listAccessibleClients(client, 5_000);
+	} catch {
+		clients = [];
+	}
+
 	return {
+		clients,
 		office: {
 			assignedId: office.id ?? "",
 			label: office.name ?? office.id ?? null,

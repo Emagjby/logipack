@@ -1,0 +1,58 @@
+@startuml
+left to right direction
+
+skinparam shadowing false
+skinparam backgroundColor transparent
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FFF1CC
+  BorderColor #A66B00
+  ArrowColor #444444
+}
+skinparam actor {
+  BorderColor #245EA8
+  FontColor #0F2F57
+}
+skinparam rectangle {
+  BorderColor #1F7A4D
+  FontColor #0E3B24
+}
+
+actor "Служител" as Employee
+actor "Администратор" as Admin
+
+Admin --|> Employee
+
+rectangle "Система LogiPack" {
+  usecase "Вход в системата" as UC_Login
+  usecase "Преглед на пратки" as UC_ViewShipments
+  usecase "Създаване на пратка" as UC_CreateShipment
+  usecase "Промяна на статус\nна пратка" as UC_ChangeStatus
+  usecase "Преглед на история\nна пратка" as UC_ViewHistory
+  usecase "Управление на клиенти" as UC_ManageClients
+  usecase "Управление на офиси" as UC_ManageOffices
+  usecase "Управление на служители" as UC_ManageEmployees
+  usecase "Управление на роли" as UC_ManageRoles
+  usecase "Извличане на справки" as UC_Reports
+  usecase "Преглед на одитни\nзаписи" as UC_Audit
+}
+
+Employee --> UC_Login
+Employee --> UC_ViewShipments
+Employee --> UC_CreateShipment
+Employee --> UC_ChangeStatus
+Employee --> UC_ViewHistory
+
+Admin --> UC_ManageClients
+Admin --> UC_ManageOffices
+Admin --> UC_ManageEmployees
+Admin --> UC_ManageRoles
+Admin --> UC_Reports
+Admin --> UC_Audit
+
+note bottom of UC_ChangeStatus
+  Достъпно при позволени
+  условия и права
+end note
+
+@enduml

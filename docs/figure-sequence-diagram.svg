@@ -1,0 +1,288 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1980" viewBox="0 0 1700 1980">
+  <rect width="1700" height="1980" fill="#ffffff"/>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#425466"/>
+    </marker>
+    <style>
+      .title { font: 700 44px "DejaVu Sans", Arial, sans-serif; fill: #173b2f; text-anchor: middle; }
+      .subtitle { font: 500 22px "DejaVu Sans", Arial, sans-serif; fill: #5f6b76; text-anchor: middle; }
+
+      .panel-login { fill: #f3faf7; stroke: #c9ddd2; stroke-width: 2.4; }
+      .panel-create { fill: #fffaf0; stroke: #e4d4aa; stroke-width: 2.4; }
+      .panel-status { fill: #f5f8fd; stroke: #ccd9ec; stroke-width: 2.4; }
+      .panel-pill-login { fill: #dff0e8; stroke: #89b59e; stroke-width: 1.8; }
+      .panel-pill-create { fill: #fae7c6; stroke: #d49b2e; stroke-width: 1.8; }
+      .panel-pill-status { fill: #e4edfb; stroke: #7ea0d9; stroke-width: 1.8; }
+      .panel-title { font: 700 24px "DejaVu Sans", Arial, sans-serif; fill: #22313f; }
+
+      .participant-user { fill: #eef2f7; stroke: #5b6c81; stroke-width: 2.4; }
+      .participant-ui { fill: #fff4d6; stroke: #d48b00; stroke-width: 2.4; }
+      .participant-idp { fill: #fde7ef; stroke: #c14773; stroke-width: 2.4; }
+      .participant-api { fill: #e7f0ff; stroke: #2f6fcb; stroke-width: 2.4; }
+      .participant-db { fill: #e6f7ef; stroke: #2e9b62; stroke-width: 2.4; }
+      .participant-label { font: 700 23px "DejaVu Sans", Arial, sans-serif; fill: #22313f; text-anchor: middle; dominant-baseline: middle; }
+
+      .lifeline { stroke: #9aa9b7; stroke-width: 2.2; stroke-dasharray: 10 8; }
+      .message { stroke: #425466; stroke-width: 3.8; fill: none; stroke-linecap: round; marker-end: url(#arrow); }
+      .return-message { stroke: #5f738a; stroke-width: 3.4; fill: none; stroke-linecap: round; stroke-dasharray: 11 8; marker-end: url(#arrow); }
+
+      .label-box { fill: #ffffff; stroke: #d6deea; stroke-width: 1.8; opacity: 0.98; }
+      .label-text { font: 600 20px "DejaVu Sans", Arial, sans-serif; fill: #3c4c5a; text-anchor: middle; dominant-baseline: middle; }
+
+      .process-box { fill: #f8fbff; stroke: #9bb6d7; stroke-width: 1.8; }
+      .process-text { font: 600 20px "DejaVu Sans", Arial, sans-serif; fill: #31577d; text-anchor: middle; dominant-baseline: middle; }
+
+      .note-box { fill: #f8fafc; stroke: #b6c3d1; stroke-width: 2.4; }
+      .note-title { font: 700 24px "DejaVu Sans", Arial, sans-serif; fill: #173b2f; }
+      .note-text { font: 500 20px "DejaVu Sans", Arial, sans-serif; fill: #334e68; }
+    </style>
+  </defs>
+
+  <text x="850" y="60" class="title">Диаграма на последователността за основни действия</text>
+  <text x="850" y="98" class="subtitle">Взаимодействие между потребител, frontend, backend, външен доставчик на идентичност и база данни в LogiPack</text>
+
+  <!-- Panel 1 -->
+  <rect x="50" y="140" width="1600" height="560" rx="28" class="panel-login"/>
+  <rect x="82" y="164" width="320" height="38" rx="18" class="panel-pill-login"/>
+  <text x="242" y="189" class="panel-title" text-anchor="middle">1. Вход в системата</text>
+
+  <g transform="translate(65 220)">
+    <rect width="190" height="52" rx="16" class="participant-user"/>
+    <text x="95" y="30" class="participant-label">Потребител</text>
+  </g>
+  <g transform="translate(405 220)">
+    <rect width="190" height="52" rx="16" class="participant-ui"/>
+    <text x="95" y="30" class="participant-label">Frontend</text>
+  </g>
+  <g transform="translate(745 220)">
+    <rect width="190" height="52" rx="16" class="participant-idp"/>
+    <text x="95" y="30" class="participant-label">Auth / IdP</text>
+  </g>
+  <g transform="translate(1085 220)">
+    <rect width="190" height="52" rx="16" class="participant-api"/>
+    <text x="95" y="30" class="participant-label">Backend</text>
+  </g>
+  <g transform="translate(1425 220)">
+    <rect width="190" height="52" rx="16" class="participant-db"/>
+    <text x="95" y="30" class="participant-label">База данни</text>
+  </g>
+
+  <line x1="160" y1="272" x2="160" y2="670" class="lifeline"/>
+  <line x1="500" y1="272" x2="500" y2="670" class="lifeline"/>
+  <line x1="840" y1="272" x2="840" y2="670" class="lifeline"/>
+  <line x1="1180" y1="272" x2="1180" y2="670" class="lifeline"/>
+  <line x1="1520" y1="272" x2="1520" y2="670" class="lifeline"/>
+
+  <line x1="160" y1="320" x2="500" y2="320" class="message"/>
+  <g transform="translate(244 298)">
+    <rect width="172" height="30" rx="15" class="label-box"/>
+    <text x="86" y="17" class="label-text">1. заявка за вход</text>
+  </g>
+
+  <line x1="500" y1="366" x2="840" y2="366" class="message"/>
+  <g transform="translate(578 344)">
+    <rect width="184" height="30" rx="15" class="label-box"/>
+    <text x="92" y="17" class="label-text">2. redirect към IdP</text>
+  </g>
+
+  <line x1="840" y1="412" x2="500" y2="412" class="return-message"/>
+  <g transform="translate(588 390)">
+    <rect width="164" height="30" rx="15" class="label-box"/>
+    <text x="82" y="17" class="label-text">3. token + identity</text>
+  </g>
+
+  <line x1="500" y1="458" x2="1180" y2="458" class="message"/>
+  <g transform="translate(708 434)">
+    <rect width="264" height="46" rx="18" class="label-box"/>
+    <text x="132" y="17" class="label-text">4. ensure-user</text>
+    <text x="132" y="33" class="label-text">GET /me</text>
+  </g>
+
+  <line x1="1180" y1="510" x2="1520" y2="510" class="message"/>
+  <g transform="translate(1260 486)">
+    <rect width="180" height="46" rx="18" class="label-box"/>
+    <text x="90" y="17" class="label-text">5. upsert user</text>
+    <text x="90" y="33" class="label-text">load roles</text>
+  </g>
+
+  <line x1="1520" y1="562" x2="1180" y2="562" class="return-message"/>
+  <g transform="translate(1262 538)">
+    <rect width="176" height="46" rx="18" class="label-box"/>
+    <text x="88" y="17" class="label-text">6. user + roles</text>
+    <text x="88" y="33" class="label-text">office scope</text>
+  </g>
+
+  <line x1="1180" y1="614" x2="500" y2="614" class="return-message"/>
+  <g transform="translate(728 590)">
+    <rect width="224" height="46" rx="18" class="label-box"/>
+    <text x="112" y="17" class="label-text">7. локален контекст</text>
+    <text x="112" y="33" class="label-text">права за достъп</text>
+  </g>
+
+  <line x1="500" y1="654" x2="160" y2="654" class="return-message"/>
+  <g transform="translate(182 630)">
+    <rect width="296" height="46" rx="18" class="label-box"/>
+    <text x="148" y="17" class="label-text">8. ролево насочване</text>
+    <text x="148" y="33" class="label-text">admin / employee / no-access</text>
+  </g>
+
+  <!-- Panel 2 -->
+  <rect x="50" y="740" width="1600" height="470" rx="28" class="panel-create"/>
+  <rect x="82" y="764" width="430" height="38" rx="18" class="panel-pill-create"/>
+  <text x="297" y="789" class="panel-title" text-anchor="middle">2. Създаване на пратка</text>
+
+  <g transform="translate(95 820)">
+    <rect width="190" height="52" rx="16" class="participant-user"/>
+    <text x="95" y="30" class="participant-label">Потребител</text>
+  </g>
+  <g transform="translate(505 820)">
+    <rect width="190" height="52" rx="16" class="participant-ui"/>
+    <text x="95" y="30" class="participant-label">Frontend</text>
+  </g>
+  <g transform="translate(915 820)">
+    <rect width="190" height="52" rx="16" class="participant-api"/>
+    <text x="95" y="30" class="participant-label">Backend</text>
+  </g>
+  <g transform="translate(1325 820)">
+    <rect width="190" height="52" rx="16" class="participant-db"/>
+    <text x="95" y="30" class="participant-label">База данни</text>
+  </g>
+
+  <line x1="190" y1="872" x2="190" y2="1170" class="lifeline"/>
+  <line x1="600" y1="872" x2="600" y2="1170" class="lifeline"/>
+  <line x1="1010" y1="872" x2="1010" y2="1170" class="lifeline"/>
+  <line x1="1420" y1="872" x2="1420" y2="1170" class="lifeline"/>
+
+  <line x1="190" y1="920" x2="600" y2="920" class="message"/>
+  <g transform="translate(274 898)">
+    <rect width="240" height="30" rx="15" class="label-box"/>
+    <text x="120" y="17" class="label-text">1. данни за пратка</text>
+  </g>
+
+  <line x1="600" y1="966" x2="1010" y2="966" class="message"/>
+  <g transform="translate(689 944)">
+    <rect width="232" height="30" rx="15" class="label-box"/>
+    <text x="116" y="17" class="label-text">2. POST /shipments</text>
+  </g>
+
+  <g transform="translate(888 988)">
+    <rect width="244" height="46" rx="18" class="process-box"/>
+    <text x="122" y="17" class="process-text">3. валидация</text>
+    <text x="122" y="33" class="process-text">контрол на права</text>
+  </g>
+
+  <line x1="1010" y1="1060" x2="1420" y2="1060" class="message"/>
+  <g transform="translate(1093 1036)">
+    <rect width="244" height="46" rx="18" class="label-box"/>
+    <text x="122" y="17" class="label-text">4. snapshot + history</text>
+    <text x="122" y="33" class="label-text">initial event</text>
+  </g>
+
+  <line x1="1420" y1="1112" x2="1010" y2="1112" class="return-message"/>
+  <g transform="translate(1144 1090)">
+    <rect width="132" height="30" rx="15" class="label-box"/>
+    <text x="66" y="17" class="label-text">5. OK</text>
+  </g>
+
+  <line x1="1010" y1="1154" x2="600" y2="1154" class="return-message"/>
+  <g transform="translate(675 1130)">
+    <rect width="260" height="46" rx="18" class="label-box"/>
+    <text x="130" y="17" class="label-text">6. 201 Created</text>
+    <text x="130" y="33" class="label-text">данни за новата пратка</text>
+  </g>
+
+  <!-- Panel 3 -->
+  <rect x="50" y="1250" width="1600" height="590" rx="28" class="panel-status"/>
+  <rect x="82" y="1274" width="560" height="38" rx="18" class="panel-pill-status"/>
+  <text x="362" y="1299" class="panel-title" text-anchor="middle">3. Промяна на статус на пратка</text>
+
+  <g transform="translate(95 1330)">
+    <rect width="190" height="52" rx="16" class="participant-user"/>
+    <text x="95" y="30" class="participant-label">Потребител</text>
+  </g>
+  <g transform="translate(505 1330)">
+    <rect width="190" height="52" rx="16" class="participant-ui"/>
+    <text x="95" y="30" class="participant-label">Frontend</text>
+  </g>
+  <g transform="translate(915 1330)">
+    <rect width="190" height="52" rx="16" class="participant-api"/>
+    <text x="95" y="30" class="participant-label">Backend</text>
+  </g>
+  <g transform="translate(1325 1330)">
+    <rect width="190" height="52" rx="16" class="participant-db"/>
+    <text x="95" y="30" class="participant-label">База данни</text>
+  </g>
+
+  <line x1="190" y1="1382" x2="190" y2="1808" class="lifeline"/>
+  <line x1="600" y1="1382" x2="600" y2="1808" class="lifeline"/>
+  <line x1="1010" y1="1382" x2="1010" y2="1808" class="lifeline"/>
+  <line x1="1420" y1="1382" x2="1420" y2="1808" class="lifeline"/>
+
+  <line x1="190" y1="1430" x2="600" y2="1430" class="message"/>
+  <g transform="translate(282 1408)">
+    <rect width="224" height="30" rx="15" class="label-box"/>
+    <text x="112" y="17" class="label-text">1. нов статус</text>
+  </g>
+
+  <line x1="600" y1="1476" x2="1010" y2="1476" class="message"/>
+  <g transform="translate(625 1454)">
+    <rect width="360" height="30" rx="15" class="label-box"/>
+    <text x="180" y="17" class="label-text">2. POST /shipments/{id}/status</text>
+  </g>
+
+  <line x1="1010" y1="1522" x2="1420" y2="1522" class="message"/>
+  <g transform="translate(1111 1500)">
+    <rect width="208" height="30" rx="15" class="label-box"/>
+    <text x="104" y="17" class="label-text">3. read snapshot</text>
+  </g>
+
+  <line x1="1420" y1="1568" x2="1010" y2="1568" class="return-message"/>
+  <g transform="translate(1103 1544)">
+    <rect width="224" height="46" rx="18" class="label-box"/>
+    <text x="112" y="17" class="label-text">4. current status</text>
+    <text x="112" y="33" class="label-text">+ office</text>
+  </g>
+
+  <g transform="translate(878 1594)">
+    <rect width="264" height="46" rx="18" class="process-box"/>
+    <text x="132" y="17" class="process-text">5. authorize actor</text>
+    <text x="132" y="33" class="process-text">validate transition</text>
+  </g>
+
+  <line x1="1010" y1="1664" x2="1420" y2="1664" class="message"/>
+  <g transform="translate(1081 1640)">
+    <rect width="268" height="46" rx="18" class="label-box"/>
+    <text x="134" y="17" class="label-text">6. timeline + history</text>
+    <text x="134" y="33" class="label-text">snapshot update</text>
+  </g>
+
+  <line x1="1420" y1="1716" x2="1010" y2="1716" class="return-message"/>
+  <g transform="translate(1153 1694)">
+    <rect width="124" height="30" rx="15" class="label-box"/>
+    <text x="62" y="17" class="label-text">7. OK</text>
+  </g>
+
+  <line x1="1010" y1="1762" x2="600" y2="1762" class="return-message"/>
+  <g transform="translate(677 1738)">
+    <rect width="256" height="46" rx="18" class="label-box"/>
+    <text x="128" y="17" class="label-text">8. 204 No Content</text>
+    <text x="128" y="33" class="label-text">refresh detail</text>
+  </g>
+
+  <line x1="600" y1="1800" x2="190" y2="1800" class="return-message"/>
+  <g transform="translate(281 1776)">
+    <rect width="228" height="46" rx="18" class="label-box"/>
+    <text x="114" y="17" class="label-text">9. статус + история</text>
+    <text x="114" y="33" class="label-text">обновени</text>
+  </g>
+
+  <!-- Note -->
+  <g transform="translate(100 1860)">
+    <rect width="1500" height="90" rx="20" class="note-box"/>
+    <text x="28" y="30" class="note-title">Бележка</text>
+    <text x="28" y="58" class="note-text">Диаграмата обобщава типичния успешен сценарий. При 401 / 403 / невалиден преход backend прекъсва потока и не записва промени.</text>
+    <text x="28" y="84" class="note-text">Локалните роли и офисен обхват се определят след удостоверяване през външния доставчик и се зареждат от собствената база данни на приложението.</text>
+  </g>
+</svg>

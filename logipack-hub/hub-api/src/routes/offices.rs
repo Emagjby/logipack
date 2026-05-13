@@ -1,5 +1,6 @@
 use axum::{Json, Router, extract::State, routing::get};
 use core_application::actor::ActorContext;
+use core_data::repository::offices_repo::OfficesRepo;
 
 use crate::{
     dto::offices::{ListOfficesResponse, OfficeDto},
@@ -19,16 +20,9 @@ async fn list_offices_handler(
     policy::require_employee(&actor)
         .map_err(|_| ApiError::forbidden("access_denied", "Access denied"))?;
 
-    let out = core_application::offices::list::list_offices(&state.db, &actor)
+    let out = OfficesRepo::list_offices(&state.db)
         .await
-        .map_err(|e| match e {
-            core_application::offices::list::ListOfficesError::Forbidden => {
-                ApiError::forbidden("access_denied", "Access denied")
-            }
-            core_application::offices::list::ListOfficesError::OfficeError(err) => {
-                ApiError::internal(err.to_string())
-            }
-        })?;
+        .map_err(|err| ApiError::internal(err.to_string()))?;
 
     let offices = out
         .into_iter()

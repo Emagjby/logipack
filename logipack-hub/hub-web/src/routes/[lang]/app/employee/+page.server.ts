@@ -7,6 +7,7 @@ import {
 	HubApiError,
 	listShipments,
 } from "$lib/server/hubApi";
+import { listAccessibleOffices } from "$lib/server/hubApi/services/offices";
 import { resolveEmployeeOffice } from "$lib/server/employeeOffice";
 import { normalizeShipmentStatus, statusLabelKey } from "$lib/domain/shipmentStatus";
 import type { PageServerLoad } from "./$types";
@@ -98,7 +99,17 @@ function formatActivityTime(iso: string): string {
 	}).format(date);
 }
 
-function buildActivity(shipments: ShipmentListItem[]) {
+function officeDisplayName(
+	office: string,
+	officeLabelById: Map<string, string>,
+): string {
+	return officeLabelById.get(office) ?? office;
+}
+
+function buildActivity(
+	shipments: ShipmentListItem[],
+	officeLabelById: Map<string, string>,
+) {
 	const groups = new Map<
 		string,
 		{
@@ -120,7 +131,7 @@ function buildActivity(shipments: ShipmentListItem[]) {
 		bucket.items.push({
 			time: formatActivityTime(shipment.updatedAt),
 			shipmentId: shipment.id,
-			title: `- ${statusLabel} · ${shipment.office}`,
+			title: `- ${statusLabel} · ${officeDisplayName(shipment.office, officeLabelById)}`,
 			tag: dashboardStatus(shipment.status),
 		});
 		groups.set(group, bucket);
@@ -152,10 +163,17 @@ export const load: PageServerLoad = async ({ parent, fetch, locals, url }) => {
 			baseUrl: HUB_API_BASE,
 		});
 
-		const [overview, shipments] = await Promise.all([
+		const [overview, shipments, offices] = await Promise.all([
 			getEmployeeOverview(client, span),
 			listShipments(client),
+			listAccessibleOffices(client, 5_000).catch((error) => {
+				console.error("employee.dashboard.offices_failed", error);
+				return [];
+			}),
 		]);
+		const officeLabelById = new Map(
+			offices.map((office) => [office.id, `${office.name} (${office.city})`]),
+		);
 
 		return {
 			canCreateShipment,
@@ -208,7 +226,7 @@ export const load: PageServerLoad = async ({ parent, fetch, locals, url }) => {
 			],
 			recentShipments: shipments.slice(0, 5).map((shipment) => ({
 				id: shipment.id,
-				destination: shipment.office,
+				destination: officeDisplayName(shipment.office, officeLabelById),
 				status: dashboardStatus(shipment.status),
 				eta: formatDashboardDate(shipment.updatedAt),
 				priority:
@@ -217,7 +235,7 @@ export const load: PageServerLoad = async ({ parent, fetch, locals, url }) => {
 						: ("normal" as const),
 			})),
 			recentSearches: shipments.slice(0, 3).map((shipment) => shipment.id),
-			activity: buildActivity(shipments),
+			activity: buildActivity(shipments, officeLabelById),
 		};
 	} catch (error) {
 		if (error instanceof HubApiError) {

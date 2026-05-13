@@ -40,9 +40,28 @@ async fn me_handler(
         None
     };
 
+    let current_office_name = match current_office_id
+        .as_ref()
+        .and_then(|office_id| Uuid::parse_str(office_id).ok())
+    {
+        Some(office_id) => core_data::repository::offices_repo::OfficesRepo::get_office_by_id(
+            &state.db,
+            office_id,
+        )
+        .await
+        .ok()
+        .flatten()
+        .map(|office| office.name),
+        None => None,
+    };
+
+    let employee_id = actor.employee_id.map(|id| id.to_string());
+
     Ok(Json(MeResponse {
         role,
         office_ids,
         current_office_id,
+        current_office_name,
+        employee_id,
     }))
 }

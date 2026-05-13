@@ -44,11 +44,23 @@ function parseBucket(raw: string | null): ReportBucket {
 
 function cleanDateParam(raw: string | null): string | null {
 	const trimmed = raw?.trim() ?? "";
-	return trimmed.length > 0 ? trimmed : null;
+	if (trimmed.length === 0) return null;
+
+	const localDateMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed);
+	if (localDateMatch) {
+		return `${localDateMatch[3]}-${localDateMatch[2]}-${localDateMatch[1]}`;
+	}
+
+	return trimmed;
+}
+
+function lastParam(url: URL, name: string): string | null {
+	const values = url.searchParams.getAll(name);
+	return values.at(-1) ?? null;
 }
 
 export const load: PageServerLoad = async ({ url, fetch, locals }) => {
-	const selectedReport = parseReportName(url.searchParams.get("report"));
+	const selectedReport = parseReportName(lastParam(url, "report"));
 	const bucket = parseBucket(url.searchParams.get("bucket"));
 	const from = cleanDateParam(url.searchParams.get("from"));
 	const to = cleanDateParam(url.searchParams.get("to"));

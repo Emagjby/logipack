@@ -252,16 +252,11 @@
 						{$_("admin.employees.offices.form.office_id")}
 						<span class="text-red-400">*</span>
 					</label>
-					<input
+					<select
 						id="office_id"
 						name="office_id"
-						type="text"
 						value={selectedOfficeId}
-						placeholder={$_(
-							"admin.employees.offices.form.office_placeholder",
-						)}
 						required
-						autocomplete="off"
 						disabled={submitting}
 						aria-invalid={officeError ? "true" : undefined}
 						aria-describedby={officeError
@@ -273,7 +268,14 @@
 								? "border-red-500/70 focus-visible:ring-red-400/60"
 								: "border-surface-700 focus-visible:ring-accent/50",
 						]}
-					/>
+					>
+						<option value="" disabled>
+							{$_("admin.employees.offices.form.office_placeholder")}
+						</option>
+						{#each offices as office (office.id)}
+							<option value={office.id}>{officeLabel(office)}</option>
+						{/each}
+					</select>
 					<p
 						id="employee_office_hint"
 						class="text-xs text-surface-400"

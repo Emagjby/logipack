@@ -5,6 +5,7 @@ import {
 	getShipmentTimeline,
 	changeShipmentStatus,
 } from "$lib/server/hubApi/services/shipments";
+import { listOffices } from "$lib/server/hubApi/services/offices";
 import {
 	buildStatusHistory,
 	buildStrataPackages,
@@ -43,6 +44,7 @@ type DetailResult =
 		shipment: ShipmentCore;
 		statusHistory: StatusHistoryRow[];
 		packages: StrataPackage[];
+		offices: { id: string; name: string; city: string }[];
 	}
 	| { state: "not_found" }
 	| { state: "error"; message: string };
@@ -57,9 +59,13 @@ export const load: PageServerLoad = async ({ params, fetch, locals }) => {
 
 		const timelineQuery = new URLSearchParams({ format: "PRETTY" });
 
-		const [detail, timeline] = await Promise.all([
+		const [detail, timeline, offices] = await Promise.all([
 			getShipment(client, params.id),
 			getShipmentTimeline(client, params.id, timelineQuery),
+			listOffices(client).catch((error) => {
+				console.error("admin.shipments.detail.offices_failed", error);
+				return [];
+			}),
 		]);
 
 		const statusHistory = buildStatusHistory(detail.id, detail, timeline);
@@ -81,6 +87,7 @@ export const load: PageServerLoad = async ({ params, fetch, locals }) => {
 			},
 			statusHistory,
 			packages,
+			offices,
 		};
 
 		return { result };

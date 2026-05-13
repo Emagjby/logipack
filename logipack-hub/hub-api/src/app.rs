@@ -40,6 +40,8 @@ pub fn router(cfg: Config, state: AppState) -> Router {
         .merge(routes::ensure_user::router())
         .merge(routes::me::router())
         .nest("/analytics", routes::analytics::router())
+        .merge(routes::clients::router())
+        .merge(routes::offices::router())
         .nest("/reports", routes::reports::router())
         .nest("/shipments", routes::shipments::router())
         .nest("/admin", routes::admin::router());

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from "$app/state";
 	import {
 		normalizeShipmentStatus,
 		statusLabelKey,
@@ -10,19 +9,6 @@
 	import type { PageData } from "./$types";
 
 	let { data }: { data: PageData } = $props();
-
-	let lang = $derived(page.params.lang || "en");
-	let dateTimeFormat = $derived.by(
-		() =>
-			new Intl.DateTimeFormat(lang, {
-				month: "short",
-				day: "numeric",
-				year: "numeric",
-				hour: "2-digit",
-				minute: "2-digit",
-				hour12: false,
-			}),
-	);
 
 	const reportOptions: { value: ReportName; labelKey: string }[] = [
 		{
@@ -85,10 +71,37 @@
 		URL.revokeObjectURL(href);
 	}
 
-	function formatGeneratedAt(iso: string): string {
-		const timestamp = new Date(iso);
-		if (Number.isNaN(timestamp.getTime())) return iso;
-		return dateTimeFormat.format(timestamp);
+	function formatDate(value: string | null): string {
+		if (!value) return "";
+
+		const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+		if (dateOnlyMatch) {
+			return `${dateOnlyMatch[3]}/${dateOnlyMatch[2]}/${dateOnlyMatch[1]}`;
+		}
+
+		const timestamp = new Date(value);
+		if (Number.isNaN(timestamp.getTime())) return value;
+
+		const day = String(timestamp.getDate()).padStart(2, "0");
+		const month = String(timestamp.getMonth() + 1).padStart(2, "0");
+		const year = timestamp.getFullYear();
+		return `${day}/${month}/${year}`;
+	}
+
+	function dateInputValue(value: string | null): string {
+		if (!value) return "";
+
+		const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+		if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+		const localMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+		if (localMatch) return `${localMatch[3]}-${localMatch[2]}-${localMatch[1]}`;
+
+		return "";
+	}
+
+	function isDateColumn(column: string): boolean {
+		return column === "bucket_start";
 	}
 
 	function columnLabel(column: string): string {
@@ -115,6 +128,10 @@
 				return $_(statusLabelKey(normalizeShipmentStatus(cell)));
 			}
 
+			if (isDateColumn(column)) {
+				return formatDate(cell);
+			}
+
 			if (isIdColumn(column)) {
 				return compactId(cell);
 			}
@@ -134,17 +151,21 @@
 			return $_(statusLabelKey(normalizeShipmentStatus(cell)));
 		}
 
+		if (isDateColumn(column)) {
+			return formatDate(cell);
+		}
+
 		return cell;
 	}
 </script>
 
-<section class="flex flex-col gap-5">
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+<section class="flex flex-col gap-4">
+	<div class="stagger stagger-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight text-surface-50">
+			<h1 class="text-2xl font-bold text-surface-50">
 				{$_("reports.headline")}
 			</h1>
-			<p class="mt-1 max-w-2xl text-sm leading-6 text-surface-400">
+			<p class="mt-1 max-w-2xl text-sm text-surface-400">
 				{$_("reports.subtitle")}
 			</p>
 		</div>
@@ -153,7 +174,7 @@
 			<button
 				type="button"
 				onclick={downloadCsv}
-				class="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover"
+				class="inline-flex cursor-pointer items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover"
 			>
 				{$_("reports.download_csv")}
 			</button>
@@ -162,8 +183,10 @@
 
 	<form
 		method="GET"
-		class="rounded-2xl border border-surface-700/60 bg-surface-900/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+		class="stagger stagger-2 rounded-xl border border-surface-700/50 bg-surface-900 p-5"
 	>
+		<input type="hidden" name="report" value={data.selectedReport} />
+
 		<div
 			class={[
 				"grid grid-cols-1 gap-3",
@@ -173,38 +196,38 @@
 			]}
 		>
 			<label class="flex flex-col gap-2 text-sm text-surface-200">
-				<span class="text-[11px] font-semibold uppercase tracking-[0.2em] text-surface-400"
+				<span class="text-xs font-medium uppercase tracking-wider text-surface-400"
 					>{$_("reports.filter.from")}</span
 				>
 				<input
 					type="date"
 					name="from"
-					value={data.from ?? ""}
-					class="min-h-12 rounded-xl border border-surface-700 bg-surface-800/90 px-4 py-2.5 text-sm text-surface-50 transition-colors focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20"
+					value={dateInputValue(data.from)}
+					class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
 				/>
 			</label>
 
 			<label class="flex flex-col gap-2 text-sm text-surface-200">
-				<span class="text-[11px] font-semibold uppercase tracking-[0.2em] text-surface-400"
+				<span class="text-xs font-medium uppercase tracking-wider text-surface-400"
 					>{$_("reports.filter.to")}</span
 				>
 				<input
 					type="date"
 					name="to"
-					value={data.to ?? ""}
-					class="min-h-12 rounded-xl border border-surface-700 bg-surface-800/90 px-4 py-2.5 text-sm text-surface-50 transition-colors focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20"
+					value={dateInputValue(data.to)}
+					class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
 				/>
 			</label>
 
 			{#if data.selectedReport === "shipments-by-period"}
 				<label class="flex flex-col gap-2 text-sm text-surface-200">
-					<span class="text-[11px] font-semibold uppercase tracking-[0.2em] text-surface-400"
+					<span class="text-xs font-medium uppercase tracking-wider text-surface-400"
 						>{$_("reports.filter.bucket")}</span
 					>
 					<select
 						name="bucket"
 						value={data.selectedBucket}
-						class="min-h-12 rounded-xl border border-surface-700 bg-surface-800/90 px-4 py-2.5 text-sm text-surface-50 transition-colors focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20"
+						class="rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
 					>
 						{#each bucketOptions as option (option.value)}
 							<option value={option.value}>{$_(option.labelKey)}</option>
@@ -216,7 +239,7 @@
 			<div class="flex items-end">
 				<button
 					type="submit"
-					class="min-h-12 w-full cursor-pointer rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover"
+					class="w-full cursor-pointer rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover"
 				>
 					{$_("reports.run")}
 				</button>
@@ -224,7 +247,7 @@
 		</div>
 
 		<div class="mt-5">
-			<p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-surface-400">
+			<p class="mb-3 text-xs font-medium uppercase tracking-wider text-surface-400">
 				{$_("reports.filter.report")}
 			</p>
 
@@ -235,10 +258,10 @@
 						name="report"
 						value={option.value}
 						class={[
-							"cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+							"cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
 							data.selectedReport === option.value
-								? "border-accent bg-accent text-surface-950 shadow-[0_0_0_1px_rgba(44,214,101,0.15)]"
-								: "border-surface-700 bg-surface-800 text-surface-300 hover:border-surface-600 hover:bg-surface-700",
+								? "border-accent bg-accent text-surface-950"
+								: "border-surface-700 bg-surface-900 text-surface-100 hover:border-surface-500 hover:bg-surface-800",
 						]}
 					>
 						{$_(option.labelKey)}
@@ -248,14 +271,14 @@
 		</div>
 	</form>
 
-	<section class="rounded-2xl border border-surface-700/60 bg-surface-900/95 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
-		<div class="border-b border-surface-700/50 px-5 py-5">
+	<section class="stagger stagger-3 overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900">
+		<div class="border-b border-surface-700/50 px-5 py-4">
 			<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div>
-					<p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-surface-500">
+					<p class="text-xs font-medium uppercase tracking-wider text-surface-400">
 						{$_("reports.result_label")}
 					</p>
-					<h2 class="mt-2 text-lg font-semibold text-surface-50">
+					<h2 class="mt-1 text-sm font-semibold text-surface-50">
 						{$_(`reports.option.${data.selectedReport.replaceAll("-", "_")}`)}
 					</h2>
 				</div>
@@ -263,12 +286,12 @@
 				{#if data.result.state === "ok"}
 					<div class="flex flex-wrap gap-2 text-xs">
 						<span
-							class="rounded-full border border-surface-700 bg-surface-950/50 px-3 py-1.5 text-surface-300"
+							class="rounded-full border border-surface-700/50 bg-surface-900 px-2.5 py-1 text-xs font-medium text-surface-400"
 						>
-							{$_("reports.generated_at")}: {formatGeneratedAt(data.result.report.generated_at)}
+							{$_("reports.generated_at")}: {formatDate(data.result.report.generated_at)}
 						</span>
 						<span
-							class="rounded-full border border-surface-700 bg-surface-950/50 px-3 py-1.5 text-surface-300"
+							class="rounded-full border border-surface-700/50 bg-surface-900 px-2.5 py-1 text-xs font-medium text-surface-400"
 						>
 							{$_("reports.rows_count", {
 								values: { count: data.result.report.rows.length },
@@ -276,7 +299,7 @@
 						</span>
 						{#if data.selectedReport === "shipments-by-period"}
 							<span
-								class="rounded-full border border-accent/25 bg-accent/10 px-3 py-1.5 text-accent"
+								class="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent"
 							>
 								{$_("reports.active_bucket", {
 									values: { bucket: $_(`reports.bucket.${data.selectedBucket}`) },
@@ -289,18 +312,29 @@
 		</div>
 
 		{#if data.result.state === "error"}
-			<div class="px-5 py-8 text-sm text-rose-300">{$_(data.result.message)}</div>
+			<div class="flex flex-col items-center px-5 py-20 text-center text-sm text-rose-300">
+				{$_(data.result.message)}
+			</div>
 		{:else if data.result.report.rows.length === 0}
-			<div class="px-5 py-8 text-sm text-surface-500">{$_("reports.empty")}</div>
+			<div class="flex flex-col items-center px-5 py-20 text-center">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-surface-800">
+					<svg class="h-6 w-6 text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125C16.5 3.504 17.004 3 17.625 3h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+					</svg>
+				</div>
+				<p class="mt-4 text-sm font-medium text-surface-200">
+					{$_("reports.empty")}
+				</p>
+			</div>
 		{:else}
 			<div class="overflow-x-auto">
 				<table class="w-full min-w-[560px] table-fixed">
-					<thead class="bg-surface-950/30">
+					<thead>
 						<tr>
 							{#each data.result.report.columns as column (column)}
 								<th
 									class={[
-										"px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-surface-500",
+										"px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-surface-600",
 										isNumericColumn(column) ? "text-right" : "text-left",
 									]}
 								>
@@ -311,7 +345,7 @@
 					</thead>
 					<tbody>
 						{#each data.result.report.rows as row, rowIndex (`${rowIndex}`)}
-							<tr class="border-t border-surface-800 transition-colors hover:bg-surface-950/20">
+							<tr class="border-t border-surface-800 transition-colors hover:bg-surface-800/50">
 								{#each row as cell, cellIndex (`${rowIndex}-${cellIndex}`)}
 									<td
 										class={[

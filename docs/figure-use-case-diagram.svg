@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1150" viewBox="0 0 1500 1150">
+  <rect width="1500" height="1150" fill="#ffffff"/>
+
+  <defs>
+    <style>
+      .system-box { fill: #eaf7ef; stroke: #2f8f5b; stroke-width: 3; }
+      .section-line { stroke: #7fb892; stroke-width: 2; stroke-dasharray: 8 8; }
+      .system-title { font: 700 40px "DejaVu Sans", Arial, sans-serif; fill: #173b2f; text-anchor: middle; }
+      .section-title { font: 700 28px "DejaVu Sans", Arial, sans-serif; fill: #24543f; text-anchor: middle; }
+      .actor-name { font: 700 22px "DejaVu Sans", Arial, sans-serif; fill: #0f2f57; text-anchor: middle; }
+      .usecase { fill: #fff4d8; stroke: #bf7b10; stroke-width: 2.5; }
+      .uc-text { font: 600 22px "DejaVu Sans", Arial, sans-serif; fill: #5c3b00; text-anchor: middle; dominant-baseline: middle; }
+      .actor-line { stroke: #1f4f86; stroke-width: 3; fill: none; stroke-linecap: round; }
+      .link { stroke: #4f5b62; stroke-width: 2.2; fill: none; }
+      .note { font: 500 18px "DejaVu Sans", Arial, sans-serif; fill: #60707a; }
+    </style>
+  </defs>
+
+  <rect x="390" y="50" width="1040" height="1030" rx="12" class="system-box"/>
+  <text x="910" y="95" class="system-title">Система LogiPack</text>
+
+  <text x="910" y="145" class="section-title">Административни действия</text>
+  <line x1="450" y1="165" x2="1370" y2="165" class="section-line"/>
+
+  <text x="910" y="625" class="section-title">Общи и оперативни действия</text>
+  <line x1="450" y1="645" x2="1370" y2="645" class="section-line"/>
+
+  <g transform="translate(120 240)">
+    <circle cx="0" cy="-45" r="24" fill="#ffffff" stroke="#1f4f86" stroke-width="3"/>
+    <line x1="0" y1="-21" x2="0" y2="42" class="actor-line"/>
+    <line x1="-34" y1="2" x2="34" y2="2" class="actor-line"/>
+    <line x1="0" y1="42" x2="-28" y2="88" class="actor-line"/>
+    <line x1="0" y1="42" x2="28" y2="88" class="actor-line"/>
+    <text x="0" y="122" class="actor-name">Администратор</text>
+  </g>
+
+  <g transform="translate(120 760)">
+    <circle cx="0" cy="-45" r="24" fill="#ffffff" stroke="#1f4f86" stroke-width="3"/>
+    <line x1="0" y1="-21" x2="0" y2="42" class="actor-line"/>
+    <line x1="-34" y1="2" x2="34" y2="2" class="actor-line"/>
+    <line x1="0" y1="42" x2="-28" y2="88" class="actor-line"/>
+    <line x1="0" y1="42" x2="28" y2="88" class="actor-line"/>
+    <text x="0" y="122" class="actor-name">Служител</text>
+  </g>
+
+  <line x1="120" y1="360" x2="120" y2="630" class="link"/>
+  <polygon points="120,590 108,614 132,614" fill="#ffffff" stroke="#4f5b62" stroke-width="2.2"/>
+  <text x="145" y="586" class="note">наследява общите действия</text>
+
+  <ellipse cx="650" cy="240" rx="205" ry="48" class="usecase"/>
+  <text x="650" y="240" class="uc-text">Управление на клиенти</text>
+
+  <ellipse cx="1070" cy="240" rx="190" ry="48" class="usecase"/>
+  <text x="1070" y="240" class="uc-text">Управление на офиси</text>
+
+  <ellipse cx="650" cy="380" rx="220" ry="48" class="usecase"/>
+  <text x="650" y="380" class="uc-text">Управление на служители</text>
+
+  <ellipse cx="1070" cy="380" rx="180" ry="48" class="usecase"/>
+  <text x="1070" y="380" class="uc-text">Управление на роли</text>
+
+  <ellipse cx="650" cy="520" rx="195" ry="48" class="usecase"/>
+  <text x="650" y="520" class="uc-text">Извличане на справки</text>
+
+  <ellipse cx="1070" cy="520" rx="225" ry="48" class="usecase"/>
+  <text x="1070" y="520" class="uc-text">Преглед на одитни записи</text>
+
+  <ellipse cx="650" cy="720" rx="180" ry="48" class="usecase"/>
+  <text x="650" y="720" class="uc-text">Вход в системата</text>
+
+  <ellipse cx="1070" cy="720" rx="180" ry="48" class="usecase"/>
+  <text x="1070" y="720" class="uc-text">Преглед на пратки</text>
+
+  <ellipse cx="650" cy="860" rx="190" ry="48" class="usecase"/>
+  <text x="650" y="860" class="uc-text">Създаване на пратка</text>
+
+  <ellipse cx="1070" cy="860" rx="220" ry="58" class="usecase"/>
+  <text x="1070" y="848" class="uc-text">Промяна на статус</text>
+  <text x="1070" y="874" class="uc-text">на пратка</text>
+
+  <ellipse cx="860" cy="1000" rx="220" ry="58" class="usecase"/>
+  <text x="860" y="988" class="uc-text">Преглед на история</text>
+  <text x="860" y="1014" class="uc-text">на пратка</text>
+
+  <line x1="154" y1="217" x2="445" y2="240" class="link"/>
+  <line x1="154" y1="232" x2="880" y2="240" class="link"/>
+  <line x1="154" y1="247" x2="430" y2="380" class="link"/>
+  <line x1="154" y1="262" x2="890" y2="380" class="link"/>
+  <line x1="154" y1="277" x2="455" y2="520" class="link"/>
+  <line x1="154" y1="292" x2="845" y2="520" class="link"/>
+
+  <line x1="154" y1="737" x2="470" y2="720" class="link"/>
+  <line x1="154" y1="752" x2="890" y2="720" class="link"/>
+  <line x1="154" y1="767" x2="460" y2="860" class="link"/>
+  <line x1="154" y1="782" x2="850" y2="860" class="link"/>
+  <line x1="154" y1="797" x2="640" y2="1000" class="link"/>
+</svg>

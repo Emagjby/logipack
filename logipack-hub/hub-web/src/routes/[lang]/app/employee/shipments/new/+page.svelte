@@ -27,6 +27,7 @@
 
 <ShipmentCreateForm
 	{form}
+	clients={data.clients}
 	cancelHref={`/${lang}/app/employee/shipments`}
 	showOfficeInput={false}
 	lockedOfficeId={data.office.assignedId}
