@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+  <title id="title">Клиент-сървърен модел</title>
+  <desc id="desc">Диаграма с три клиента, интернет, сървър и база данни, с означени заявки, отговори и обмен на данни.</desc>
+
+  <defs>
+    <style>
+      .bg { fill: #ffffff; stroke: #cfcfd4; stroke-width: 3; }
+      .stroke { fill: none; stroke: #222226; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .fill-dark { fill: #404045; stroke: #222226; stroke-width: 4; }
+      .fill-mid { fill: #808086; stroke: #222226; stroke-width: 4; }
+      .label-box { fill: #ffffff; stroke: #8e8e94; stroke-width: 2.5; rx: 6; ry: 6; }
+      .label-text { fill: #222226; font: 700 34px Arial, Helvetica, sans-serif; }
+      .flow-text { fill: #222226; font: 600 26px Arial, Helvetica, sans-serif; }
+      .node-text { fill: #222226; font: 700 28px Arial, Helvetica, sans-serif; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#222226"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="6" y="6" width="1388" height="848" rx="54"/>
+
+  <g transform="translate(105 80)">
+    <rect x="-8" y="14" width="82" height="56" rx="8" fill="#d8d8dd" stroke="#222226" stroke-width="4"/>
+    <line x1="18" y1="86" x2="48" y2="86" class="stroke"/>
+    <line x1="8" y1="102" x2="58" y2="102" class="stroke"/>
+    <rect class="label-box" x="-26" y="140" width="124" height="54"/>
+    <text class="label-text" x="36" y="178" text-anchor="middle">Клиент 1</text>
+  </g>
+
+  <g transform="translate(72 334)">
+    <rect x="24" y="24" width="104" height="70" rx="8" fill="#cfcfd4" stroke="#222226" stroke-width="4"/>
+    <line x1="60" y1="110" x2="92" y2="110" class="stroke"/>
+    <line x1="48" y1="126" x2="104" y2="126" class="stroke"/>
+    <rect class="label-box" x="-4" y="174" width="154" height="54"/>
+    <text class="label-text" x="73" y="212" text-anchor="middle">Клиент 2</text>
+  </g>
+
+  <g transform="translate(78 592)">
+    <rect x="10" y="18" width="118" height="72" rx="8" fill="#d8d8dd" stroke="#222226" stroke-width="4"/>
+    <line x1="50" y1="104" x2="88" y2="104" class="stroke"/>
+    <line x1="36" y1="120" x2="102" y2="120" class="stroke"/>
+    <rect class="label-box" x="-6" y="228" width="154" height="54"/>
+    <text class="label-text" x="71" y="266" text-anchor="middle">Клиент 3</text>
+  </g>
+
+  <g transform="translate(494 300)">
+    <circle cx="138" cy="108" r="44" fill="#414146"/>
+    <circle cx="194" cy="86" r="52" fill="#414146"/>
+    <circle cx="252" cy="108" r="40" fill="#414146"/>
+    <rect x="120" y="108" width="170" height="52" fill="#414146"/>
+    <rect class="label-box" x="114" y="184" width="180" height="56"/>
+    <text class="label-text" x="204" y="223" text-anchor="middle">Интернет</text>
+  </g>
+
+  <g transform="translate(882 282)">
+    <rect x="22" y="24" width="106" height="170" rx="8" class="fill-dark"/>
+    <line class="stroke" x1="42" y1="58" x2="108" y2="58"/>
+    <line class="stroke" x1="42" y1="100" x2="108" y2="100"/>
+    <line class="stroke" x1="42" y1="142" x2="108" y2="142"/>
+    <circle cx="34" cy="58" r="3" fill="#ffffff"/>
+    <circle cx="34" cy="100" r="3" fill="#ffffff"/>
+    <circle cx="34" cy="142" r="3" fill="#ffffff"/>
+    <rect class="label-box" x="8" y="288" width="134" height="56"/>
+    <text class="label-text" x="75" y="327" text-anchor="middle">Сървър</text>
+  </g>
+
+  <g transform="translate(1162 286)">
+    <ellipse cx="70" cy="24" rx="42" ry="18" fill="#ffffff" stroke="#222226" stroke-width="4"/>
+    <path d="M28 24 V198" fill="none" stroke="#222226" stroke-width="4"/>
+    <path d="M112 24 V198" fill="none" stroke="#222226" stroke-width="4"/>
+    <ellipse cx="70" cy="112" rx="42" ry="18" fill="none" stroke="#222226" stroke-width="4"/>
+    <ellipse cx="70" cy="198" rx="42" ry="18" fill="#8a8a90" stroke="#222226" stroke-width="4"/>
+    <rect class="label-box" x="-4" y="266" width="148" height="56"/>
+    <text class="label-text" x="70" y="305" text-anchor="middle">База данни</text>
+  </g>
+
+  <line x1="165" y1="137" x2="557" y2="430" class="stroke" marker-end="url(#arrowhead)"/>
+  <line x1="208" y1="410" x2="556" y2="430" class="stroke" marker-end="url(#arrowhead)"/>
+  <line x1="205" y1="727" x2="556" y2="430" class="stroke" marker-end="url(#arrowhead)"/>
+
+  <line x1="558" y1="430" x2="205" y2="430" class="stroke" marker-end="url(#arrowhead)"/>
+  <line x1="558" y1="430" x2="206" y2="137" class="stroke" marker-end="url(#arrowhead)"/>
+  <line x1="558" y1="430" x2="206" y2="727" class="stroke" marker-end="url(#arrowhead)"/>
+
+  <line x1="838" y1="386" x2="882" y2="386" class="stroke" marker-end="url(#arrowhead)"/>
+  <line x1="882" y1="456" x2="838" y2="456" class="stroke" marker-end="url(#arrowhead)"/>
+
+  <line x1="1032" y1="394" x2="1188" y2="394" class="stroke" marker-end="url(#arrowhead)"/>
+  <line x1="1188" y1="474" x2="1032" y2="474" class="stroke" marker-end="url(#arrowhead)"/>
+
+  <text class="flow-text" x="330" y="236">заявка/отговор</text>
+  <text class="flow-text" x="270" y="420">заявка/отговор</text>
+  <text class="flow-text" x="344" y="570">заявка/отговор</text>
+
+  <text class="flow-text" x="738" y="362">препратена заявка</text>
+  <text class="flow-text" x="718" y="484">отговор</text>
+
+  <text class="flow-text" x="1070" y="372">заявка/актуализация</text>
+  <text class="flow-text" x="1122" y="494">данни</text>
+</svg>

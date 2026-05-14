@@ -715,13 +715,13 @@
 		<span class="text-sm text-surface-600">&copy; 2026 LogiPack</span>
 		<div class="flex gap-4">
 			<a
-				href="/privacy"
+				href={`/${currentLang}/privacy`}
 				class="cursor-pointer text-sm text-surface-600 transition-colors duration-200 hover:text-surface-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
 			>
 				{$_("footer.privacy")}
 			</a>
 			<a
-				href="/terms"
+				href={`/${currentLang}/terms`}
 				class="cursor-pointer text-sm text-surface-600 transition-colors duration-200 hover:text-surface-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
 			>
 				{$_("footer.terms")}

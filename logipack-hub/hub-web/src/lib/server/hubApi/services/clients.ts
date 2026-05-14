@@ -25,6 +25,16 @@ export async function listClients(
 	return mapListClientsResponseDto(res.data);
 }
 
+export async function listAccessibleClients(
+	client: HubApiClient,
+	timeoutMs = 10_000,
+): Promise<ClientListItem[]> {
+	const res = await client.get<ListClientsResponseDto>("/clients", {
+		timeoutMs,
+	});
+	return mapListClientsResponseDto(res.data);
+}
+
 export async function getClient(
 	client: HubApiClient,
 	clientId: string,

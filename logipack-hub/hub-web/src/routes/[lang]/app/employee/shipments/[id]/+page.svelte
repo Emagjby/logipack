@@ -350,16 +350,23 @@
 					>
 						{$_("shipment.update.office")}
 					</label>
-					<input
-						type="text"
+					<select
 						id="to_office_id"
 						name="to_office_id"
 						required={isOfficeRequired}
-						disabled={isOfficeDisabled}
+						disabled={isOfficeDisabled || offices.length === 0}
 						value={officeInputValue}
-						placeholder={$_("shipment.update.office_placeholder")}
-						class="mt-1 w-full rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-600 outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-60"
-					/>
+						class="mt-1 w-full rounded-lg border border-surface-700/50 bg-surface-800 px-3 py-2 text-sm text-surface-200 outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						<option value="" disabled={isOfficeRequired}>
+							{$_("shipment.update.office_placeholder")}
+						</option>
+						{#each offices as office (office.id)}
+							<option value={office.id}>
+								{office.name ?? office.id}
+							</option>
+						{/each}
+					</select>
 					<p class="mt-1 text-[11px] text-surface-600">
 						{$_("shipment.update.office_hint")}
 						{#if isOfficeDisabled}

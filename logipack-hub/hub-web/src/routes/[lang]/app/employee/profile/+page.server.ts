@@ -1,6 +1,9 @@
 import type { PageServerLoad } from "./$types";
 import { error } from "@sveltejs/kit";
 import { decodeJwt } from "jose";
+import { HUB_API_BASE } from "$env/static/private";
+import { createHubApiClient } from "$lib/server/hubApi";
+import { getMeContext } from "$lib/server/hubApi/services/identity";
 import { resolveEmployeeOffice } from "$lib/server/employeeOffice";
 
 type OfficeSummary = {
@@ -86,7 +89,7 @@ function normalizeOffices(rawSession: Record<string, unknown>): OfficeSummary[] 
 	return [];
 }
 
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ parent, fetch, locals }) => {
 	const { session, pathname } = await parent();
 
 	if (session?.role === "admin") {
@@ -115,7 +118,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 		],
 	);
 
-	const employeeId =
+    let employeeId =
 		getFirstString(rawSession, ["employee_id", "employeeId"]) ??
 		getFirstString(claims, ["employee_id", "employeeId"]);
 
@@ -142,6 +145,29 @@ export const load: PageServerLoad = async ({ parent }) => {
 	const resolvedOffice = resolveEmployeeOffice(rawSession);
 	let currentOfficeId = resolvedOffice.id;
 	let currentOfficeName = resolvedOffice.name;
+
+	try {
+		const client = createHubApiClient({
+			fetch,
+			locals,
+			baseUrl: HUB_API_BASE,
+		});
+		const me = await getMeContext(client, 5_000);
+		if (me.employee_id) {
+			employeeId = me.employee_id;
+		}
+		if (me.current_office_id) {
+			currentOfficeId = me.current_office_id;
+		}
+		if (me.current_office_name) {
+			currentOfficeName = me.current_office_name;
+		}
+		if (me.office_ids.length > 0) {
+			officeIds = uniqueStrings([...officeIds, ...me.office_ids]);
+		}
+	} catch (error) {
+		console.error("employee.profile.me_failed", error);
+	}
 
 	if (!currentOfficeId && officeIds.length > 0) {
 		currentOfficeId = officeIds[0] ?? null;

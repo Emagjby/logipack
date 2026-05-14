@@ -1,5 +1,7 @@
 import { HUB_API_BASE } from "$env/static/private";
 import { createHubApiClient, HubApiError } from "$lib/server/hubApi";
+import { listClients } from "$lib/server/hubApi/services/clients";
+import { listOffices } from "$lib/server/hubApi/services/offices";
 import { createShipment } from "$lib/server/hubApi/services/shipments";
 import {
 	hasShipmentCreateErrors,
@@ -7,7 +9,27 @@ import {
 	validateShipmentCreateForm,
 } from "$lib/server/shipmentCreateForm";
 import { fail, isRedirect, redirect } from "@sveltejs/kit";
-import type { Actions } from "./$types";
+import type { Actions, PageServerLoad } from "./$types";
+
+export const load: PageServerLoad = async ({ fetch, locals }) => {
+	try {
+		const client = createHubApiClient({
+			fetch,
+			locals,
+			baseUrl: HUB_API_BASE,
+		});
+
+		const [clients, offices] = await Promise.all([
+			listClients(client),
+			listOffices(client),
+		]);
+
+		return { clients, offices };
+	} catch (error) {
+		console.error("admin.shipments.new.load_options_failed", error);
+		return { clients: [], offices: [] };
+	}
+};
 
 export const actions: Actions = {
 	default: async ({ request, params, fetch, locals }) => {

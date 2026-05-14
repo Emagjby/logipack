@@ -2,6 +2,18 @@
 	import { enhance } from "$app/forms";
 	import { _ } from "svelte-i18n";
 
+	type ClientOption = {
+		id: string;
+		name: string;
+		email?: string | null;
+	};
+
+	type OfficeOption = {
+		id: string;
+		name: string;
+		city: string;
+	};
+
 	type FormLike = {
 		fieldErrors?: {
 			client_id?: string;
@@ -20,6 +32,8 @@
 		showOfficeInput = true,
 		lockedOfficeId = null,
 		officeBadgeText = null,
+		clients = [],
+		offices = [],
 		loading = false,
 	}: {
 		form: FormLike;
@@ -27,6 +41,8 @@
 		showOfficeInput?: boolean;
 		lockedOfficeId?: string | null;
 		officeBadgeText?: string | null;
+		clients?: ClientOption[];
+		offices?: OfficeOption[];
 		loading?: boolean;
 	} = $props();
 
@@ -52,6 +68,14 @@
 	let clientIdError = $derived(form?.fieldErrors?.client_id ?? null);
 	let submitError = $derived(form?.submitError ?? null);
 	let isBusy = $derived(loading || submitting);
+
+	function clientLabel(client: ClientOption): string {
+		return client.email ? `${client.name} (${client.email})` : client.name;
+	}
+
+	function officeLabel(office: OfficeOption): string {
+		return `${office.name} (${office.city})`;
+	}
 </script>
 
 <section class="stagger stagger-1">
@@ -107,23 +131,44 @@
 					{$_("admin.shipments.new.client_id")}
 					<span class="text-red-400">*</span>
 				</label>
-				<input
-					id="client_id"
-					name="client_id"
-					type="text"
-					value={values.client_id}
-					aria-invalid={clientIdError ? "true" : undefined}
-					aria-describedby={clientIdError
-						? "client_id_error"
-						: undefined}
-					disabled={isBusy}
-					class={[
-						"w-full rounded-lg border bg-surface-800 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-70",
-						clientIdError
-							? "border-red-500/70 focus-visible:ring-red-400/60"
-							: "border-surface-700 focus-visible:ring-accent/50",
-					]}
-				/>
+				{#if clients.length > 0}
+					<select
+						id="client_id"
+						name="client_id"
+						value={values.client_id}
+						required
+						aria-invalid={clientIdError ? "true" : undefined}
+						aria-describedby={clientIdError ? "client_id_error" : undefined}
+						disabled={isBusy}
+						class={[
+							"w-full rounded-lg border bg-surface-800 px-3 py-2 text-sm text-surface-200 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-70",
+							clientIdError
+								? "border-red-500/70 focus-visible:ring-red-400/60"
+								: "border-surface-700 focus-visible:ring-accent/50",
+						]}
+					>
+						<option value="" disabled>{$_("admin.shipments.new.select_client")}</option>
+						{#each clients as client (client.id)}
+							<option value={client.id}>{clientLabel(client)}</option>
+						{/each}
+					</select>
+				{:else}
+					<input
+						id="client_id"
+						name="client_id"
+						type="text"
+						value={values.client_id}
+						aria-invalid={clientIdError ? "true" : undefined}
+						aria-describedby={clientIdError ? "client_id_error" : undefined}
+						disabled={isBusy}
+						class={[
+							"w-full rounded-lg border bg-surface-800 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-70",
+							clientIdError
+								? "border-red-500/70 focus-visible:ring-red-400/60"
+								: "border-surface-700 focus-visible:ring-accent/50",
+						]}
+					/>
+				{/if}
 				{#if clientIdError}
 					<p
 						id="client_id_error"
@@ -146,14 +191,29 @@
 							({$_("admin.shipments.new.optional")})
 						</span>
 					</label>
-					<input
-						id="current_office_id"
-						name="current_office_id"
-						type="text"
-						value={values.current_office_id}
-						disabled={isBusy}
-						class="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-70"
-					/>
+					{#if offices.length > 0}
+						<select
+							id="current_office_id"
+							name="current_office_id"
+							value={values.current_office_id}
+							disabled={isBusy}
+							class="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-70"
+						>
+							<option value="">{$_("admin.shipments.new.no_office")}</option>
+							{#each offices as office (office.id)}
+								<option value={office.id}>{officeLabel(office)}</option>
+							{/each}
+						</select>
+					{:else}
+						<input
+							id="current_office_id"
+							name="current_office_id"
+							type="text"
+							value={values.current_office_id}
+							disabled={isBusy}
+							class="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-200 placeholder:text-surface-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-70"
+						/>
+					{/if}
 					<p class="text-xs text-surface-400">
 						{$_("admin.shipments.new.current_office_hint")}
 					</p>

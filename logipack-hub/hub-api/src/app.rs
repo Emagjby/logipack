@@ -4,6 +4,7 @@ use crate::config::AuthMode;
 use crate::config::Config;
 use crate::state::AppState;
 use axum::{Router, routing::get};
+use tower_http::trace::TraceLayer;
 
 use crate::routes;
 
@@ -40,10 +41,15 @@ pub fn router(cfg: Config, state: AppState) -> Router {
         .merge(routes::ensure_user::router())
         .merge(routes::me::router())
         .nest("/analytics", routes::analytics::router())
+        .merge(routes::clients::router())
+        .merge(routes::offices::router())
         .nest("/reports", routes::reports::router())
         .nest("/shipments", routes::shipments::router())
         .nest("/admin", routes::admin::router());
     let protected_router = apply_auth_layer(protected_router, &cfg);
 
-    public_router.merge(protected_router).with_state(state)
+    public_router
+        .merge(protected_router)
+        .layer(TraceLayer::new_for_http())
+        .with_state(state)
 }

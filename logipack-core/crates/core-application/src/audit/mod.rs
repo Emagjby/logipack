@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::actor::ActorContext;
 
-pub use core_data::repository::audit_repo::{AuditCursor, PaginatedAuditEvents};
+pub use core_data::repository::audit_repo::{AuditCursor, AuditListFilters, PaginatedAuditEvents};
 pub use emit::{AuditError, emit_audit_event};
 pub use types::{AuditActionKey, AuditEntityType, AuditEventInput};
 
@@ -23,12 +23,14 @@ pub async fn list_audit_events(
     actor: &ActorContext,
     limit: u64,
     cursor: Option<&AuditCursor>,
+    offset: u64,
+    filters: &AuditListFilters,
 ) -> Result<PaginatedAuditEvents, ListAuditEventsError> {
     if !actor.is_admin() {
         return Err(ListAuditEventsError::Forbidden);
     }
 
-    core_data::repository::audit_repo::AuditRepo::list_paginated(db, limit, cursor)
+    core_data::repository::audit_repo::AuditRepo::list_paginated(db, limit, cursor, offset, filters)
         .await
         .map_err(Into::into)
 }

@@ -28,6 +28,7 @@ export type AuditEvent = {
 
 export type AuditPage = {
 	limit: number;
+	total_count: number | null;
 	next_cursor: string | null;
 	has_next: boolean;
 };
@@ -155,6 +156,14 @@ function mapAuditPageDto(dto: AuditPageDto): AuditPage {
 			field: "page.limit",
 			value: obj.limit,
 		}),
+		total_count:
+			obj.total_count === undefined || obj.total_count === null
+				? null
+				: requireNumber({
+						endpoint,
+						field: "page.total_count",
+						value: obj.total_count,
+					}),
 		next_cursor: cleanNullableString({
 			endpoint,
 			field: "page.next_cursor",

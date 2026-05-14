@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Многослойна архитектура</title>
+  <desc id="desc">Диаграма с три слоя: представителен слой, логически слой и слой на данните.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4f4f6"/>
+      <stop offset="100%" stop-color="#dddddf"/>
+    </linearGradient>
+    <style>
+      .panel { fill: #1e1e20; stroke: #2f2f33; stroke-width: 3; }
+      .panel-title { fill: #f3f3f5; font: 600 28px Arial, Helvetica, sans-serif; letter-spacing: 0.6px; }
+      .label { fill: #f3f3f5; font: 500 26px Arial, Helvetica, sans-serif; }
+      .line { stroke: #f3f3f5; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .line-soft { stroke: #d8d8dc; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .arrow { stroke: #d8d8dc; stroke-width: 3; fill: none; stroke-linecap: round; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12" fill="none" stroke="#d8d8dc" stroke-width="2.5"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="520" rx="24" fill="url(#bg)"/>
+
+  <rect class="panel" x="48" y="54" width="292" height="408" rx="10"/>
+  <rect class="panel" x="454" y="54" width="292" height="408" rx="10"/>
+  <rect class="panel" x="860" y="54" width="292" height="408" rx="10"/>
+
+  <text class="panel-title" x="194" y="96" text-anchor="middle">Представителен</text>
+  <text class="panel-title" x="194" y="130" text-anchor="middle">слой</text>
+
+  <text class="panel-title" x="600" y="96" text-anchor="middle">Логически</text>
+  <text class="panel-title" x="600" y="130" text-anchor="middle">слой</text>
+
+  <text class="panel-title" x="1006" y="96" text-anchor="middle">Слой на</text>
+  <text class="panel-title" x="1006" y="130" text-anchor="middle">данните</text>
+
+  <g transform="translate(114 182)">
+    <rect class="line-soft" x="10" y="34" width="126" height="84" rx="8"/>
+    <line class="line-soft" x1="56" y1="132" x2="90" y2="132"/>
+    <line class="line-soft" x1="44" y1="148" x2="102" y2="148"/>
+    <rect class="line-soft" x="0" y="50" width="28" height="60" rx="5"/>
+    <text class="label" x="72" y="226" text-anchor="middle">Клиент</text>
+  </g>
+
+  <g transform="translate(522 182)">
+    <rect class="line-soft" x="24" y="24" width="100" height="142" rx="8"/>
+    <line class="line-soft" x1="42" y1="56" x2="106" y2="56"/>
+    <line class="line-soft" x1="42" y1="95" x2="106" y2="95"/>
+    <line class="line-soft" x1="42" y1="134" x2="106" y2="134"/>
+    <circle class="line-soft" cx="34" cy="56" r="3"/>
+    <circle class="line-soft" cx="34" cy="95" r="3"/>
+    <circle class="line-soft" cx="34" cy="134" r="3"/>
+    <text class="label" x="74" y="226" text-anchor="middle">Сървър</text>
+  </g>
+
+  <g transform="translate(930 170)">
+    <ellipse class="line-soft" cx="72" cy="34" rx="44" ry="16"/>
+    <path class="line-soft" d="M28 34 V150"/>
+    <path class="line-soft" d="M116 34 V150"/>
+    <ellipse class="line-soft" cx="72" cy="92" rx="44" ry="16"/>
+    <ellipse class="line-soft" cx="72" cy="150" rx="44" ry="16"/>
+    <text class="label" x="72" y="250" text-anchor="middle">База данни</text>
+  </g>
+
+  <line class="arrow" x1="340" y1="258" x2="454" y2="258" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)"/>
+  <line class="arrow" x1="746" y1="258" x2="860" y2="258" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)"/>
+</svg>

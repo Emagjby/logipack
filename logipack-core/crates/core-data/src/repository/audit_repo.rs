@@ -1,8 +1,8 @@
 use chrono::{DateTime, FixedOffset};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, DbErr, EntityTrait, QueryFilter,
-    QueryOrder, QuerySelect,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, DbErr, EntityTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
 };
 use serde_json::Value as JsonValue;
 use thiserror::Error;
@@ -58,6 +58,16 @@ pub struct PaginatedAuditEvents {
     pub rows: Vec<audit_events::Model>,
     pub next_cursor: Option<AuditCursor>,
     pub has_next: bool,
+    pub total_count: u64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AuditListFilters {
+    pub actor: Option<String>,
+    pub entity_type: Option<String>,
+    pub action_key: Option<String>,
+    pub from: Option<DateTime<FixedOffset>>,
+    pub to: Option<DateTime<FixedOffset>>,
 }
 
 #[derive(Debug, Error)]
@@ -98,11 +108,16 @@ impl AuditRepo {
         db: &DatabaseConnection,
         limit: u64,
         cursor: Option<&AuditCursor>,
+        offset: u64,
+        filters: &AuditListFilters,
     ) -> Result<PaginatedAuditEvents, AuditRepoError> {
         let limit = limit.max(1);
         let fetch_limit = limit + 1;
+        let mut base_query = audit_events::Entity::find();
+        base_query = apply_filters(base_query, filters);
+        let total_count = base_query.clone().count(db).await?;
 
-        let mut query = audit_events::Entity::find()
+        let mut query = base_query
             .order_by_desc(audit_events::Column::OccurredAt)
             .order_by_desc(audit_events::Column::Id);
 
@@ -116,6 +131,10 @@ impl AuditRepo {
                             .add(audit_events::Column::Id.lt(cursor.id)),
                     ),
             );
+        }
+
+        if cursor.is_none() {
+            query = query.offset(offset);
         }
 
         let mut rows = query.limit(fetch_limit).all(db).await?;
@@ -134,6 +153,53 @@ impl AuditRepo {
             rows,
             next_cursor: if has_next { next_cursor } else { None },
             has_next,
+            total_count,
         })
     }
+}
+
+fn apply_filters(
+    mut query: sea_orm::Select<audit_events::Entity>,
+    filters: &AuditListFilters,
+) -> sea_orm::Select<audit_events::Entity> {
+    if let Some(actor) = filters
+        .actor
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        if let Ok(user_id) = actor.parse::<Uuid>() {
+            query = query.filter(audit_events::Column::ActorUserId.eq(user_id));
+        } else {
+            query = query.filter(audit_events::Column::ActorDisplayName.contains(actor));
+        }
+    }
+
+    if let Some(entity_type) = filters
+        .entity_type
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        query = query.filter(audit_events::Column::EntityType.eq(entity_type));
+    }
+
+    if let Some(action_key) = filters
+        .action_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        query = query.filter(audit_events::Column::ActionKey.contains(action_key));
+    }
+
+    if let Some(from) = filters.from {
+        query = query.filter(audit_events::Column::OccurredAt.gte(from));
+    }
+
+    if let Some(to) = filters.to {
+        query = query.filter(audit_events::Column::OccurredAt.lte(to));
+    }
+
+    query
 }

@@ -1,0 +1,322 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1500" viewBox="0 0 1900 1500">
+  <rect width="1900" height="1500" fill="#ffffff"/>
+
+  <defs>
+    <filter id="edge-halo" x="-20%" y="-20%" width="140%" height="140%">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="1.6" result="spread"/>
+      <feFlood flood-color="#ffffff" flood-opacity="1" result="halo-color"/>
+      <feComposite in="halo-color" in2="spread" operator="in" result="halo"/>
+      <feMerge>
+        <feMergeNode in="halo"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      .title { font: 700 38px "DejaVu Sans", Arial, sans-serif; fill: #173b2f; text-anchor: middle; }
+      .subtitle { font: 500 19px "DejaVu Sans", Arial, sans-serif; fill: #5f6b76; text-anchor: middle; }
+
+      .table-title { font: 700 22px "DejaVu Sans", Arial, sans-serif; fill: #ffffff; text-anchor: middle; dominant-baseline: middle; paint-order: stroke fill; stroke: rgba(0,0,0,0.08); stroke-width: 2; }
+      .field { font: 500 18px "DejaVu Sans", Arial, sans-serif; fill: #1f2933; dominant-baseline: middle; }
+      .legend-title { font: 700 20px "DejaVu Sans", Arial, sans-serif; fill: #173b2f; }
+      .legend-text { font: 500 18px "DejaVu Sans", Arial, sans-serif; fill: #334e68; dominant-baseline: middle; }
+      .card { font: 700 17px "DejaVu Sans", Arial, sans-serif; fill: #475569; text-anchor: middle; dominant-baseline: middle; paint-order: stroke fill; stroke: #ffffff; stroke-width: 8; stroke-linejoin: round; }
+      .edge { stroke: #334155; stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; filter: url(#edge-halo); }
+      .edge-dashed { stroke: #64748b; stroke-width: 4.4; fill: none; stroke-dasharray: 14 10; stroke-linecap: round; stroke-linejoin: round; filter: url(#edge-halo); }
+      .edge-note { font: 600 16px "DejaVu Sans", Arial, sans-serif; fill: #475569; text-anchor: middle; paint-order: stroke fill; stroke: #ffffff; stroke-width: 7; stroke-linejoin: round; }
+
+      .access-body { fill: #f4f8ff; stroke: #3d6fd6; stroke-width: 4.6; }
+      .access-head { fill: #3d6fd6; stroke: #3d6fd6; stroke-width: 4.6; }
+      .ops-body { fill: #fff8e8; stroke: #d08b11; stroke-width: 4.6; }
+      .ops-head { fill: #d08b11; stroke: #d08b11; stroke-width: 4.6; }
+      .office-body { fill: #eefbf6; stroke: #2d9b72; stroke-width: 4.6; }
+      .office-head { fill: #2d9b72; stroke: #2d9b72; stroke-width: 4.6; }
+      .event-body { fill: #fdf0f5; stroke: #c65288; stroke-width: 4.6; }
+      .event-head { fill: #c65288; stroke: #c65288; stroke-width: 4.6; }
+      .audit-body { fill: #f4f5f7; stroke: #6c7a89; stroke-width: 4.6; }
+      .audit-head { fill: #6c7a89; stroke: #6c7a89; stroke-width: 4.6; }
+      .legend-box { fill: #f7fafc; stroke: #b8c4ce; stroke-width: 2.6; }
+      .row-line { stroke: #c7d2df; stroke-width: 1.8; }
+    </style>
+  </defs>
+
+  <text x="950" y="58" class="title">ER диаграма на базата данни на LogiPack</text>
+  <text x="950" y="92" class="subtitle">Основни таблици, първични и външни ключове, M:N връзки и event store структура</text>
+
+  <!-- users -->
+  <g transform="translate(60 120)">
+    <rect width="320" height="224" rx="12" class="access-body"/>
+    <rect width="320" height="44" rx="12" class="access-head"/>
+    <text x="160" y="24" class="table-title">users</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="320" y2="164" class="row-line"/>
+    <line x1="0" y1="194" x2="320" y2="194" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">name</text>
+    <text x="16" y="119" class="field">UQ email</text>
+    <text x="16" y="149" class="field">password_hash</text>
+    <text x="16" y="179" class="field">UQ auth0_sub</text>
+    <text x="16" y="209" class="field">created_at</text>
+  </g>
+
+  <!-- roles -->
+  <g transform="translate(60 430)">
+    <rect width="320" height="104" rx="12" class="access-body"/>
+    <rect width="320" height="44" rx="12" class="access-head"/>
+    <text x="160" y="24" class="table-title">roles</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">UQ name</text>
+  </g>
+
+  <!-- user_roles -->
+  <g transform="translate(470 220)">
+    <rect width="320" height="104" rx="12" class="access-body"/>
+    <rect width="320" height="44" rx="12" class="access-head"/>
+    <text x="160" y="24" class="table-title">user_roles</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <text x="16" y="59" class="field">PK, FK user_id</text>
+    <text x="16" y="89" class="field">PK, FK role_id</text>
+  </g>
+
+  <!-- employees -->
+  <g transform="translate(60 660)">
+    <rect width="320" height="194" rx="12" class="access-body"/>
+    <rect width="320" height="44" rx="12" class="access-head"/>
+    <text x="160" y="24" class="table-title">employees</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="320" y2="164" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">UQ, FK user_id</text>
+    <text x="16" y="119" class="field">created_at</text>
+    <text x="16" y="149" class="field">updated_at</text>
+    <text x="16" y="179" class="field">deleted_at</text>
+  </g>
+
+  <!-- offices -->
+  <g transform="translate(470 630)">
+    <rect width="320" height="224" rx="12" class="office-body"/>
+    <rect width="320" height="44" rx="12" class="office-head"/>
+    <text x="160" y="24" class="table-title">offices</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="320" y2="164" class="row-line"/>
+    <line x1="0" y1="194" x2="320" y2="194" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">name</text>
+    <text x="16" y="119" class="field">city</text>
+    <text x="16" y="149" class="field">address</text>
+    <text x="16" y="179" class="field">updated_at</text>
+    <text x="16" y="209" class="field">deleted_at</text>
+  </g>
+
+  <!-- employee_offices -->
+  <g transform="translate(470 955)">
+    <rect width="320" height="104" rx="12" class="office-body"/>
+    <rect width="320" height="44" rx="12" class="office-head"/>
+    <text x="160" y="24" class="table-title">employee_offices</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <text x="16" y="59" class="field">PK, FK employee_id</text>
+    <text x="16" y="89" class="field">PK, FK office_id</text>
+  </g>
+
+  <!-- clients -->
+  <g transform="translate(930 120)">
+    <rect width="320" height="194" rx="12" class="ops-body"/>
+    <rect width="320" height="44" rx="12" class="ops-head"/>
+    <text x="160" y="24" class="table-title">clients</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="320" y2="164" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">name</text>
+    <text x="16" y="119" class="field">phone</text>
+    <text x="16" y="149" class="field">email</text>
+    <text x="16" y="179" class="field">deleted_at</text>
+  </g>
+
+  <!-- shipments -->
+  <g transform="translate(930 390)">
+    <rect width="320" height="224" rx="12" class="ops-body"/>
+    <rect width="320" height="44" rx="12" class="ops-head"/>
+    <text x="160" y="24" class="table-title">shipments</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="320" y2="164" class="row-line"/>
+    <line x1="0" y1="194" x2="320" y2="194" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">FK client_id</text>
+    <text x="16" y="119" class="field">current_status</text>
+    <text x="16" y="149" class="field">FK current_office_id?</text>
+    <text x="16" y="179" class="field">created_at</text>
+    <text x="16" y="209" class="field">updated_at</text>
+  </g>
+
+  <!-- shipment_status_history -->
+  <g transform="translate(930 710)">
+    <rect width="320" height="254" rx="12" class="ops-body"/>
+    <rect width="320" height="44" rx="12" class="ops-head"/>
+    <text x="160" y="24" class="table-title">shipment_status_history</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="320" y2="164" class="row-line"/>
+    <line x1="0" y1="194" x2="320" y2="194" class="row-line"/>
+    <line x1="0" y1="224" x2="320" y2="224" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">FK shipment_id</text>
+    <text x="16" y="119" class="field">from_status</text>
+    <text x="16" y="149" class="field">to_status</text>
+    <text x="16" y="179" class="field">changed_at</text>
+    <text x="16" y="209" class="field">FK actor_user_id?</text>
+    <text x="16" y="239" class="field">FK office_id?</text>
+  </g>
+
+  <!-- streams -->
+  <g transform="translate(1360 420)">
+    <rect width="320" height="164" rx="12" class="event-body"/>
+    <rect width="320" height="44" rx="12" class="event-head"/>
+    <text x="160" y="24" class="table-title">streams</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">head_hash</text>
+    <text x="16" y="119" class="field">kind</text>
+    <text x="16" y="149" class="field">created_at</text>
+  </g>
+
+  <!-- packages -->
+  <g transform="translate(1360 660)">
+    <rect width="320" height="224" rx="12" class="event-body"/>
+    <rect width="320" height="44" rx="12" class="event-head"/>
+    <text x="160" y="24" class="table-title">packages</text>
+    <line x1="0" y1="44" x2="320" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="320" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="320" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="320" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="320" y2="164" class="row-line"/>
+    <line x1="0" y1="194" x2="320" y2="194" class="row-line"/>
+    <text x="16" y="59" class="field">PK hash</text>
+    <text x="16" y="89" class="field">FK stream_id</text>
+    <text x="16" y="119" class="field">prev_hash</text>
+    <text x="16" y="149" class="field">event_type</text>
+    <text x="16" y="179" class="field">UQ (stream_id, seq)</text>
+    <text x="16" y="209" class="field">created_at</text>
+  </g>
+
+  <!-- audit_events -->
+  <g transform="translate(1240 1010)">
+    <rect width="520" height="254" rx="12" class="audit-body"/>
+    <rect width="520" height="44" rx="12" class="audit-head"/>
+    <text x="260" y="24" class="table-title">audit_events</text>
+    <line x1="0" y1="44" x2="520" y2="44" class="row-line"/>
+    <line x1="0" y1="74" x2="520" y2="74" class="row-line"/>
+    <line x1="0" y1="104" x2="520" y2="104" class="row-line"/>
+    <line x1="0" y1="134" x2="520" y2="134" class="row-line"/>
+    <line x1="0" y1="164" x2="520" y2="164" class="row-line"/>
+    <line x1="0" y1="194" x2="520" y2="194" class="row-line"/>
+    <line x1="0" y1="224" x2="520" y2="224" class="row-line"/>
+    <text x="16" y="59" class="field">PK id</text>
+    <text x="16" y="89" class="field">occurred_at</text>
+    <text x="16" y="119" class="field">REF actor_user_id?</text>
+    <text x="16" y="149" class="field">action_key</text>
+    <text x="16" y="179" class="field">entity_type</text>
+    <text x="16" y="209" class="field">entity_id</text>
+    <text x="16" y="239" class="field">REF office_id? + metadata_json</text>
+  </g>
+
+  <!-- legend -->
+  <g transform="translate(60 1180)">
+    <rect width="700" height="220" rx="14" class="legend-box"/>
+    <text x="24" y="36" class="legend-title">Легенда</text>
+
+    <text x="24" y="76" class="legend-text">PK = първичен ключ</text>
+    <text x="24" y="110" class="legend-text">FK = външен ключ</text>
+    <text x="24" y="144" class="legend-text">UQ = уникално поле / ограничение</text>
+    <text x="24" y="178" class="legend-text">REF = логическа препратка без твърд FK</text>
+
+    <line x1="380" y1="72" x2="470" y2="72" class="edge"/>
+    <text x="490" y="76" class="legend-text">твърда релационна връзка</text>
+
+    <line x1="380" y1="112" x2="470" y2="112" class="edge-dashed"/>
+    <text x="490" y="116" class="legend-text">логическа / приложна връзка</text>
+
+    <text x="380" y="158" class="legend-text">M:N връзки:</text>
+    <text x="490" y="158" class="legend-text">users ↔ roles, employees ↔ offices</text>
+    <text x="380" y="192" class="legend-text">1:1 логическа връзка:</text>
+    <text x="560" y="192" class="legend-text">shipments.id = streams.id</text>
+  </g>
+
+  <!-- hard relations -->
+  <polyline points="380,232 425,232 425,272 470,272" class="edge"/>
+  <text x="398" y="220" class="card">1</text>
+  <text x="452" y="258" class="card">N</text>
+
+  <polyline points="380,482 425,482 425,272 470,272" class="edge"/>
+  <text x="398" y="470" class="card">1</text>
+  <text x="452" y="290" class="card">N</text>
+
+  <line x1="220" y1="344" x2="220" y2="660" class="edge"/>
+  <text x="240" y="356" class="card">1</text>
+  <text x="246" y="642" class="card">0..1</text>
+
+  <polyline points="380,757 430,757 430,1007 470,1007" class="edge"/>
+  <text x="398" y="745" class="card">1</text>
+  <text x="452" y="994" class="card">N</text>
+
+  <line x1="630" y1="854" x2="630" y2="955" class="edge"/>
+  <text x="648" y="870" class="card">1</text>
+  <text x="648" y="940" class="card">N</text>
+
+  <line x1="1090" y1="314" x2="1090" y2="390" class="edge"/>
+  <text x="1108" y="328" class="card">1</text>
+  <text x="1108" y="374" class="card">N</text>
+
+  <polyline points="790,742 860,742 860,502 930,502" class="edge"/>
+  <text x="808" y="730" class="card">1</text>
+  <text x="910" y="488" class="card">0..N</text>
+
+  <line x1="1090" y1="614" x2="1090" y2="710" class="edge"/>
+  <text x="1108" y="628" class="card">1</text>
+  <text x="1108" y="694" class="card">N</text>
+
+  <polyline points="380,232 880,232 880,837 930,837" class="edge"/>
+  <text x="402" y="220" class="card">1</text>
+  <text x="904" y="823" class="card">0..N</text>
+
+  <polyline points="790,742 900,742 900,867 930,867" class="edge"/>
+  <text x="810" y="730" class="card">1</text>
+  <text x="910" y="853" class="card">0..N</text>
+
+  <line x1="1520" y1="584" x2="1520" y2="660" class="edge"/>
+  <text x="1538" y="598" class="card">1</text>
+  <text x="1538" y="644" class="card">N</text>
+
+  <!-- logical relations -->
+  <line x1="1250" y1="502" x2="1360" y2="502" class="edge-dashed"/>
+  <text x="1305" y="488" class="edge-note">1:1 shared id</text>
+
+  <polyline points="380,232 420,232 420,350 1285,350 1285,1010 1295,1010" class="edge-dashed"/>
+  <text x="1304" y="370" class="card">0..N</text>
+
+  <polyline points="790,742 1325,742 1325,1010 1360,1010" class="edge-dashed"/>
+  <text x="1342" y="726" class="card">0..N</text>
+</svg>

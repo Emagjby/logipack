@@ -49,7 +49,13 @@ export async function getMeContext(
 		return mapMeContext(res.data);
 	} catch (e) {
 		if (e instanceof HubApiError && e.status === 404) {
-			return { role: "", office_ids: [], current_office_id: null };
+			return {
+				role: "",
+				office_ids: [],
+				current_office_id: null,
+				current_office_name: null,
+				employee_id: null,
+			};
 		}
 		throw e;
 	}

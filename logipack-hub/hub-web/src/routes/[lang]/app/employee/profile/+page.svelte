@@ -150,9 +150,9 @@
 				>
 					{$_("profile.field.employee_id")}
 				</dt>
-				<dd class="min-w-0 truncate font-mono text-sm text-surface-200">
-					{data.profile.employeeId ?? notAssigned}
-				</dd>
+			<dd class="min-w-0 truncate text-sm text-surface-200">
+				{data.profile.employeeId ?? notAssigned}
+			</dd>
 			</div>
 
 			<div

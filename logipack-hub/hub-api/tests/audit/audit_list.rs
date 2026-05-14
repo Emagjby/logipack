@@ -64,6 +64,7 @@ async fn list_audit_empty() {
 
     assert!(body.events.is_empty());
     assert_eq!(body.page.limit, 10);
+    assert_eq!(body.page.total_count, 0);
     assert!(!body.page.has_next);
     assert!(body.page.next_cursor.is_none());
 }
@@ -96,6 +97,7 @@ async fn list_audit_paginates_and_preserves_order() {
     let first_body: ListAuditResponse = serde_json::from_slice(&first_body).unwrap();
 
     assert_eq!(first_body.events.len(), 2);
+    assert_eq!(first_body.page.total_count, 3);
     assert!(first_body.page.has_next);
     assert!(first_body.page.next_cursor.is_some());
     assert!(first_body.events[0].occurred_at >= first_body.events[1].occurred_at);
@@ -127,6 +129,7 @@ async fn list_audit_paginates_and_preserves_order() {
     let second_body: ListAuditResponse = serde_json::from_slice(&second_body).unwrap();
 
     assert_eq!(second_body.events.len(), 1);
+    assert_eq!(second_body.page.total_count, 3);
     assert!(!second_body.page.has_next);
     assert!(second_body.page.next_cursor.is_none());
     assert_ne!(first_body.events[0].id, second_body.events[0].id);

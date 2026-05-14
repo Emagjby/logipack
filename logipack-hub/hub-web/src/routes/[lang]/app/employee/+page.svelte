@@ -4,10 +4,6 @@
 	import { _ } from "svelte-i18n";
 	import ShipmentStatusBadge from "$lib/components/app/ShipmentStatusBadge.svelte";
 	import { compactId } from "$lib/utils/idDisplay";
-	import {
-		normalizeShipmentStatus,
-		statusDotClass,
-	} from "$lib/domain/shipmentStatus";
 
 	let { data }: { data: PageData } = $props();
 
@@ -24,6 +20,8 @@
 			? data.recentShipments
 			: data.recentShipments.filter((s) => s.status === shipmentFilter),
 	);
+
+	let visibleShipments = $derived(filteredShipments.slice(0, 5));
 
 	let minutesAgo = $derived.by(() => {
 		if (typeof globalThis.window === "undefined")
@@ -77,10 +75,6 @@
 		{ label: $_("delivered"), value: "delivered" },
 	]);
 
-	function dotColor(tag: string | null): string {
-		if (!tag) return "bg-surface-600";
-		return statusDotClass(normalizeShipmentStatus(tag));
-	}
 </script>
 
 <section
@@ -316,9 +310,10 @@
 	{/if}
 </section>
 
-<div class="stagger stagger-4 mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
+
+<div class="stagger stagger-4 mt-6">
 	<div
-		class="relative overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900 lg:col-span-3"
+		class="relative self-start overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900"
 	>
 		<div class="border-b border-surface-700/50 px-5 py-4">
 			<div class="flex items-center justify-between">
@@ -350,50 +345,63 @@
 			</div>
 		</div>
 		<div class="relative">
-			<table class="w-full">
-				<thead>
-					<tr>
-						<th
-							class="w-8 px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-						></th>
-						<th
-							class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-							>ID</th
+			{#if visibleShipments.length === 0}
+				<div class="flex min-h-64 flex-col items-center justify-center px-5 py-12 text-center">
+					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-surface-800">
+						<svg
+							class="h-6 w-6 text-surface-500"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="1.5"
 						>
-						<th
-							class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-							>{$_("destination")}</th
-						>
-						<th
-							class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-							>{$_("status")}</th
-						>
-						<th
-							class="px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-							>{$_("eta")}</th
-						>
-						<th
-							class="w-10 px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-						></th>
-					</tr>
-				</thead>
-				<tbody>
-					{#if filteredShipments.length === 0}
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25-2.25M12 13.875V7.5M3.75 7.5h16.5"
+							/>
+						</svg>
+					</div>
+					<p class="mt-4 text-sm font-medium text-surface-200">
+						{$_("empd.no_shipments_for_filter")}
+					</p>
+					<a
+						href={`/${lang}/app/employee/shipments`}
+						class="mt-4 inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-surface-950 transition-colors hover:bg-accent-hover"
+					>
+						{$_("empd.view_all_shipments")}
+					</a>
+				</div>
+			{:else}
+				<table class="w-full table-fixed">
+					<thead>
 						<tr>
-							<td
-								colspan="6"
-								class="py-8 text-center text-sm text-surface-600"
+							<th
+								class="w-8 px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+							></th>
+							<th
+								class="w-[22%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								>ID</th
 							>
-								{$_("empd.no_shipments_for_filter")}
-								<a
-									href={`/${lang}/app/employee/shipments`}
-									class="ml-1 text-accent hover:text-accent-hover"
-									>{$_("empd.view_all_shipments")}</a
-								>
-							</td>
+							<th
+								class="w-[38%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								>{$_("destination")}</th
+							>
+							<th
+								class="w-[20%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								>{$_("status")}</th
+							>
+							<th
+								class="w-[18%] px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+								>{$_("eta")}</th
+							>
+							<th
+								class="w-10 px-5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+							></th>
 						</tr>
-					{:else}
-						{#each filteredShipments as shipment (shipment.id)}
+					</thead>
+					<tbody>
+						{#each visibleShipments as shipment (shipment.id)}
 							<tr
 								onclick={() =>
 									goto(
@@ -413,13 +421,15 @@
 									title={shipment.id}
 									>{compactId(shipment.id)}</td
 								>
-								<td class="px-5 py-3 text-sm text-surface-200"
-									>{shipment.destination}</td
-								>
+								<td class="min-w-0 px-5 py-3 text-sm text-surface-200">
+									<div class="truncate" title={shipment.destination}>
+										{shipment.destination}
+									</div>
+								</td>
 								<td class="px-5 py-3">
 									<ShipmentStatusBadge status={shipment.status} />
 								</td>
-								<td class="px-5 py-3 text-sm text-surface-400"
+								<td class="whitespace-nowrap px-5 py-3 text-sm text-surface-400"
 									>{shipment.eta}</td
 								>
 								<td class="px-5 py-3">
@@ -439,75 +449,14 @@
 								</td>
 							</tr>
 						{/each}
-					{/if}
-				</tbody>
-			</table>
+					</tbody>
+				</table>
+			{/if}
 			{#if isRefreshing}
 				<div
 					class="absolute inset-0 animate-pulse bg-surface-800/80"
 				></div>
 			{/if}
-		</div>
-	</div>
-
-	<div
-		class="stagger stagger-5 rounded-xl border border-surface-700/50 bg-surface-900 lg:col-span-2"
-	>
-		<div class="border-b border-surface-700/50 px-5 py-4">
-			<span class="text-sm font-semibold text-surface-50"
-				>{$_("activity")}</span
-			>
-		</div>
-		{#if data.activity.length === 0}
-			<div class="px-5 py-8 text-center text-sm text-surface-600">
-				{$_("no_recent_activity")}
-			</div>
-		{:else}
-			{#each data.activity as group, i (group.group)}
-				<div class={["", i > 0 && "mt-1 border-t border-surface-800"]}>
-					<div class="px-5 pb-1 pt-3">
-						<span
-							class="text-[10px] font-medium uppercase tracking-widest text-surface-600"
-							>{group.group}</span
-						>
-					</div>
-					{#each group.items as item (item.shipmentId + item.time)}
-						<div class="flex gap-3 px-5 py-3">
-							<span
-								class={[
-									"mt-1.5 h-2 w-2 shrink-0 rounded-full",
-									dotColor(item.tag),
-								]}
-							></span>
-							<div class="min-w-0 flex-1">
-								<div class="text-sm text-surface-200">
-									<span class="font-mono text-accent" title={item.shipmentId}
-										>{compactId(item.shipmentId)}</span
-									>
-									{item.title}
-								</div>
-								<div class="mt-1 flex items-center gap-2">
-									<span class="text-[11px] text-surface-600"
-										>{item.time}</span
-									>
-									{#if item.tag}
-										<ShipmentStatusBadge
-											status={item.tag}
-											compact={true}
-										/>
-									{/if}
-								</div>
-							</div>
-						</div>
-					{/each}
-				</div>
-			{/each}
-		{/if}
-		<div class="border-t border-surface-800 px-5 py-3 text-center">
-			<button
-				class="cursor-pointer text-xs text-surface-600 transition-colors hover:text-surface-400"
-				>{$_("show-more")}</button
-			>
 		</div>
 	</div>
 </div>
@@ -539,10 +488,6 @@
 	.stagger-4 {
 		animation-delay: 0.2s;
 	}
-	.stagger-5 {
-		animation-delay: 0.25s;
-	}
-
 	@keyframes pulse-dot {
 		0%,
 		100% {

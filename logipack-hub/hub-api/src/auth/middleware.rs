@@ -4,6 +4,7 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
+use tracing::debug;
 use jsonwebtoken::{Algorithm, Validation, decode, decode_header};
 use std::time::Duration;
 
@@ -101,12 +102,18 @@ pub async fn auth0_jwt_middleware(
 ) -> Response {
     let authz = match req.headers().get(axum::http::header::AUTHORIZATION) {
         Some(v) => v,
-        None => return unauthorized(),
+        None => {
+            debug!("auth missing authorization header");
+            return unauthorized();
+        }
     };
 
     let authz = match authz.to_str() {
         Ok(s) => s,
-        Err(_) => return unauthorized(),
+        Err(_) => {
+            debug!("auth invalid authorization header encoding");
+            return unauthorized();
+        }
     };
 
     let token = match authz
@@ -114,18 +121,27 @@ pub async fn auth0_jwt_middleware(
         .or_else(|| authz.strip_prefix("bearer "))
     {
         Some(t) => t,
-        _ => return unauthorized(),
+        _ => {
+            debug!("auth invalid bearer prefix");
+            return unauthorized();
+        }
     };
 
     // get kid
     let header = match decode_header(token) {
         Ok(h) => h,
-        Err(_) => return unauthorized(),
+        Err(_) => {
+            debug!("auth failed to decode jwt header");
+            return unauthorized();
+        }
     };
 
     let kid = match header.kid {
         Some(k) => k,
-        None => return unauthorized(),
+        None => {
+            debug!("auth missing jwt kid");
+            return unauthorized();
+        }
     };
 
     // ensure we have a key for kid; refresh JWKS if needed
@@ -133,16 +149,23 @@ pub async fn auth0_jwt_middleware(
 
     if key.is_none() {
         // if cache not fresh, load jwks; if fresh but kid missing, still try reload once
-        let _ = load_and_cache_jwks(&cfg).await;
+        if load_and_cache_jwks(&cfg).await.is_err() {
+            debug!("auth jwks load failed kid={}", kid);
+        }
         key = get_cached_key(&kid);
     } else if !cache_is_fresh(cfg.jwks_cache_ttl) {
         // background refresh to keep keys warm
-        let _ = load_and_cache_jwks(&cfg).await;
+        if load_and_cache_jwks(&cfg).await.is_err() {
+            debug!("auth jwks refresh failed kid={}", kid);
+        }
     }
 
     let key = match key {
         Some(k) => k,
-        None => return unauthorized(),
+        None => {
+            debug!("auth jwks missing key kid={}", kid);
+            return unauthorized();
+        }
     };
 
     let mut validation = Validation::new(Algorithm::RS256);
@@ -155,11 +178,21 @@ pub async fn auth0_jwt_middleware(
 
     let token_data = match decode::<Claims>(token, &key, &validation) {
         Ok(td) => td,
-        Err(_) => return unauthorized(),
+        Err(_) => {
+            debug!("auth jwt decode failed");
+            return unauthorized();
+        }
     };
 
     // extra explicit claims checks
     if validate_claims(&cfg, &token_data.claims).is_err() {
+        debug!(
+            "auth claims validation failed iss={} aud={:?} exp={} nbf={:?}",
+            token_data.claims.iss,
+            token_data.claims.aud,
+            token_data.claims.exp,
+            token_data.claims.nbf,
+        );
         return unauthorized();
     }
 

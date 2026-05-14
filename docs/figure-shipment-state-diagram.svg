@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="980" viewBox="40 20 1580 900">
+  <rect width="1700" height="980" fill="#ffffff"/>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#425466"/>
+    </marker>
+    <style>
+      .title { font: 700 44px "DejaVu Sans", Arial, sans-serif; fill: #173b2f; text-anchor: middle; }
+      .subtitle { font: 500 22px "DejaVu Sans", Arial, sans-serif; fill: #5f6b76; text-anchor: middle; }
+      .state { fill: #fff7e3; stroke: #c98307; stroke-width: 4.6; }
+      .state-terminal { fill: #fbe9ee; stroke: #b73b67; stroke-width: 4.6; }
+      .state-loop { fill: #eef7ff; stroke: #2f6fcb; stroke-width: 4.6; }
+      .state-title { font: 700 28px "DejaVu Sans", Arial, sans-serif; fill: #2d3748; text-anchor: middle; dominant-baseline: middle; }
+      .state-code { font: 600 20px "DejaVu Sans", Arial, sans-serif; fill: #6b7280; text-anchor: middle; dominant-baseline: middle; }
+      .edge { stroke: #425466; stroke-width: 4.6; fill: none; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
+      .edge-cancel { stroke: #8b5e00; stroke-width: 4.2; fill: none; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
+      .edge-loop { stroke: #2f6fcb; stroke-width: 4.4; fill: none; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
+      .label { font: 600 17px "DejaVu Sans", Arial, sans-serif; fill: #475569; text-anchor: middle; dominant-baseline: middle; }
+      .label-box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.8; opacity: 0.98; }
+      .note-box { fill: #f7fafc; stroke: #a9b8c7; stroke-width: 2.5; }
+      .note-title { font: 700 23px "DejaVu Sans", Arial, sans-serif; fill: #173b2f; }
+      .note-text { font: 500 20px "DejaVu Sans", Arial, sans-serif; fill: #334e68; }
+      .start-dot { fill: #1f2937; }
+      .end-ring { fill: none; stroke: #7a1f3d; stroke-width: 4; }
+      .end-dot { fill: #7a1f3d; }
+    </style>
+  </defs>
+
+  <text x="850" y="58" class="title">Диаграма на състоянията на пратка</text>
+  <text x="850" y="92" class="subtitle">Жизнен цикъл на пратката и допустимите преходи между статусите в LogiPack</text>
+
+  <!-- start -->
+  <circle cx="95" cy="300" r="18" class="start-dot"/>
+
+  <!-- main states -->
+  <g transform="translate(150 240)">
+    <rect width="200" height="120" rx="28" class="state"/>
+    <text x="100" y="48" class="state-title">Създадена</text>
+    <text x="100" y="82" class="state-code">NEW</text>
+  </g>
+
+  <g transform="translate(430 240)">
+    <rect width="200" height="120" rx="28" class="state-loop"/>
+    <text x="100" y="48" class="state-title">Приета</text>
+    <text x="100" y="82" class="state-code">ACCEPTED</text>
+  </g>
+
+  <g transform="translate(710 240)">
+    <rect width="220" height="120" rx="28" class="state"/>
+    <text x="110" y="48" class="state-title">В обработка</text>
+    <text x="110" y="82" class="state-code">PROCESSED</text>
+  </g>
+
+  <g transform="translate(1010 240)">
+    <rect width="220" height="120" rx="28" class="state"/>
+    <text x="110" y="48" class="state-title">В транзит</text>
+    <text x="110" y="82" class="state-code">IN_TRANSIT</text>
+  </g>
+
+  <g transform="translate(1330 170)">
+    <rect width="220" height="120" rx="28" class="state-terminal"/>
+    <text x="110" y="48" class="state-title">Доставена</text>
+    <text x="110" y="82" class="state-code">DELIVERED</text>
+    <circle cx="110" cy="60" r="69" class="end-ring"/>
+  </g>
+
+  <g transform="translate(1330 470)">
+    <rect width="220" height="120" rx="28" class="state-terminal"/>
+    <text x="110" y="48" class="state-title">Отменена</text>
+    <text x="110" y="82" class="state-code">CANCELLED</text>
+    <circle cx="110" cy="60" r="69" class="end-ring"/>
+  </g>
+
+  <!-- arrows main flow -->
+  <line x1="113" y1="300" x2="150" y2="300" class="edge"/>
+  <line x1="350" y1="300" x2="430" y2="300" class="edge"/>
+  <line x1="630" y1="300" x2="710" y2="300" class="edge"/>
+  <line x1="930" y1="300" x2="1010" y2="300" class="edge"/>
+  <line x1="1230" y1="262" x2="1330" y2="230" class="edge"/>
+
+  <!-- loop arrival -->
+  <path d="M1120 360 C1120 500, 780 520, 530 430 C480 412, 454 390, 454 360" class="edge-loop"/>
+
+  <!-- cancellation arrows -->
+  <path d="M250 360 C250 520, 530 610, 1330 500" class="edge-cancel"/>
+  <path d="M530 360 C560 500, 790 560, 1330 525" class="edge-cancel"/>
+  <path d="M820 360 C850 480, 980 540, 1330 550" class="edge-cancel"/>
+  <path d="M1120 360 C1145 430, 1210 500, 1330 575" class="edge-cancel"/>
+
+  <!-- arrow labels -->
+  <g transform="translate(106 254)">
+    <rect width="94" height="30" rx="15" class="label-box"/>
+    <text x="47" y="16" class="label">старт</text>
+  </g>
+  <g transform="translate(362 254)">
+    <rect width="112" height="30" rx="15" class="label-box"/>
+    <text x="56" y="16" class="label">приемане</text>
+  </g>
+  <g transform="translate(654 254)">
+    <rect width="116" height="30" rx="15" class="label-box"/>
+    <text x="58" y="16" class="label">обработка</text>
+  </g>
+  <g transform="translate(954 254)">
+    <rect width="108" height="30" rx="15" class="label-box"/>
+    <text x="54" y="16" class="label">изпращане</text>
+  </g>
+  <g transform="translate(1210 188)">
+    <rect width="150" height="30" rx="15" class="label-box"/>
+    <text x="75" y="16" class="label">финална доставка</text>
+  </g>
+  <g transform="translate(732 482)">
+    <rect width="186" height="32" rx="16" class="label-box"/>
+    <text x="93" y="17" class="label">пристигане в офис</text>
+  </g>
+  <g transform="translate(1080 620)">
+    <rect width="280" height="54" rx="18" class="label-box"/>
+    <text x="140" y="21" class="label">отмяна от всяко</text>
+    <text x="140" y="39" class="label">нетерминално състояние</text>
+  </g>
+
+  <!-- terminal markers -->
+  <circle cx="1440" cy="230" r="45" class="end-dot" opacity="0.08"/>
+  <circle cx="1440" cy="530" r="45" class="end-dot" opacity="0.08"/>
+
+  <!-- note -->
+  <g transform="translate(150 690)">
+    <rect width="1220" height="180" rx="18" class="note-box"/>
+    <text x="30" y="42" class="note-title">Бележка за модела</text>
+    <text x="30" y="82" class="note-text">В реалната имплементация на LogiPack няма отделен статус „Пристигнала в офис“.</text>
+    <text x="30" y="116" class="note-text">Този етап се реализира чрез прехода IN_TRANSIT -> ACCEPTED, което означава, че пратката</text>
+    <text x="30" y="150" class="note-text">е пристигнала и е приета в следващия офис. Така се поддържа цикъл за многоофисно маршрутизиране.</text>
+  </g>
+</svg>

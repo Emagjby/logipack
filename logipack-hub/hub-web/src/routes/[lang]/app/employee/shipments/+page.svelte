@@ -322,43 +322,43 @@
 		class="stagger stagger-2 relative z-0 mt-4 overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900"
 	>
 		<div class="overflow-x-auto">
-			<table class="w-full min-w-[540px]">
-				<thead>
-					<tr>
-						<th
-							class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-						>
-							{$_("shipments.col.id")}
-						</th>
-						<th
-							class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-						>
-							{$_("shipments.col.status")}
-						</th>
-						<th
-							class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-						>
-							{$_("shipments.col.office")}
-						</th>
-						<th
-							class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
-						>
-							{$_("shipments.col.updated")}
-						</th>
-						<th class="w-10 px-5 py-3"></th>
-					</tr>
-				</thead>
-				<tbody>
-					{#if filtered.length === 0}
+			{#if filtered.length === 0}
+				<div class="flex min-h-64 flex-col items-center justify-center px-5 py-12 text-center">
+					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-surface-800">
+						<svg class="h-6 w-6 text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25-2.25M12 13.875V7.5M3.75 7.5h16.5" />
+						</svg>
+					</div>
+					<p class="mt-4 text-sm font-medium text-surface-200">{$_("shipments.no_results")}</p>
+				</div>
+			{:else}
+				<table class="w-full min-w-[540px]">
+					<thead>
 						<tr>
-							<td
-								colspan="5"
-								class="py-12 text-center text-sm text-surface-600"
+							<th
+								class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
 							>
-								{$_("shipments.no_results")}
-							</td>
+								{$_("shipments.col.id")}
+							</th>
+							<th
+								class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+							>
+								{$_("shipments.col.status")}
+							</th>
+							<th
+								class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+							>
+								{$_("shipments.col.office")}
+							</th>
+							<th
+								class="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-surface-600"
+							>
+								{$_("shipments.col.updated")}
+							</th>
+							<th class="w-10 px-5 py-3"></th>
 						</tr>
-					{:else}
+					</thead>
+					<tbody>
 						{#each filtered as shipment (shipment.id)}
 							<tr
 								onclick={() =>
@@ -418,9 +418,9 @@
 								</td>
 							</tr>
 						{/each}
-					{/if}
-				</tbody>
-			</table>
+					</tbody>
+				</table>
+			{/if}
 		</div>
 	</div>
 {/if}

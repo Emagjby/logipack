@@ -20,6 +20,7 @@ pub struct AuditEventDto {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuditPageDto {
     pub limit: u64,
+    pub total_count: u64,
     pub next_cursor: Option<String>,
     pub has_next: bool,
 }

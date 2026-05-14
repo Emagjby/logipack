@@ -227,11 +227,15 @@ export const GET: RequestHandler = async ({ url, cookies, locals }) => {
 		let role = "";
 		let officeIds: string[] = [];
 		let currentOfficeId: string | null = null;
+		let currentOfficeName: string | null = null;
+		let employeeId: string | null = null;
 		try {
 			const me = await getMeContext(hub, 5_000);
 			role = me.role;
 			officeIds = me.office_ids;
 			currentOfficeId = me.current_office_id;
+			currentOfficeName = me.current_office_name;
+			employeeId = me.employee_id;
 		} catch (e: unknown) {
 			console.error("/me failed: ", e);
 			throw error(502, AUTH_ERROR_DETAILS.userRoleLoadFailed);
@@ -251,6 +255,8 @@ export const GET: RequestHandler = async ({ url, cookies, locals }) => {
 			email,
 			office_ids: officeIds,
 			current_office_id: currentOfficeId,
+			current_office_name: currentOfficeName,
+			employee_id: employeeId,
 		})
 			.setProtectedHeader({ alg: "dir", enc: "A256GCM" })
 			.setIssuedAt()

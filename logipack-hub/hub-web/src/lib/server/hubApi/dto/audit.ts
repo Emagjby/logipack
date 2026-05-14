@@ -15,6 +15,7 @@ export type AuditEventDto = {
 
 export type AuditPageDto = {
 	limit: number;
+	total_count?: number;
 	next_cursor?: string | null;
 	has_next: boolean;
 };

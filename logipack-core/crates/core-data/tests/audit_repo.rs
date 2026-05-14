@@ -3,7 +3,9 @@ use sea_orm::{ConnectionTrait, DatabaseConnection, DbBackend, Statement};
 use serde_json::json;
 use uuid::Uuid;
 
-use core_data::repository::audit_repo::{AuditCursor, AuditRepo, InsertAuditEvent};
+use core_data::repository::audit_repo::{
+    AuditCursor, AuditListFilters, AuditRepo, InsertAuditEvent,
+};
 use test_infra::test_db;
 
 async fn cleanup_core_data(db: &DatabaseConnection) {
@@ -92,18 +94,70 @@ async fn list_paginated_returns_stable_descending_pages() {
             .unwrap();
     }
 
-    let first = AuditRepo::list_paginated(&db, 2, None).await.unwrap();
+    let first = AuditRepo::list_paginated(&db, 2, None, 0, &AuditListFilters::default())
+        .await
+        .unwrap();
     assert_eq!(first.rows.len(), 2);
+    assert_eq!(first.total_count, 3);
     assert!(first.has_next);
     assert!(first.next_cursor.is_some());
     assert!(first.rows[0].occurred_at >= first.rows[1].occurred_at);
 
-    let second = AuditRepo::list_paginated(&db, 2, first.next_cursor.as_ref())
-        .await
-        .unwrap();
+    let second = AuditRepo::list_paginated(
+        &db,
+        2,
+        first.next_cursor.as_ref(),
+        0,
+        &AuditListFilters::default(),
+    )
+    .await
+    .unwrap();
     assert_eq!(second.rows.len(), 1);
     assert!(!second.has_next);
     assert!(second.next_cursor.is_none());
     assert_ne!(first.rows[0].id, second.rows[0].id);
     assert_ne!(first.rows[1].id, second.rows[0].id);
+}
+
+#[tokio::test]
+async fn list_paginated_filters_by_actor_type_action_and_date() {
+    let db = test_db().await;
+    cleanup_core_data(&db).await;
+
+    let base = Utc::now().fixed_offset();
+    let mut first = make_event(1, base - Duration::days(2));
+    first.actor_display_name = Some("Alice Admin".into());
+    first.entity_type = Some("shipment".into());
+    first.action_key = "shipment.created".into();
+
+    let mut second = make_event(2, base - Duration::days(1));
+    second.actor_display_name = Some("Bob Manager".into());
+    second.entity_type = Some("office".into());
+    second.action_key = "office.updated".into();
+
+    AuditRepo::insert_event(&db, first).await.unwrap();
+    AuditRepo::insert_event(&db, second).await.unwrap();
+
+    let filtered = AuditRepo::list_paginated(
+        &db,
+        10,
+        None,
+        0,
+        &AuditListFilters {
+            actor: Some("Alice".into()),
+            entity_type: Some("shipment".into()),
+            action_key: Some("created".into()),
+            from: Some(base - Duration::days(3)),
+            to: Some(base - Duration::days(1)),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(filtered.total_count, 1);
+    assert_eq!(filtered.rows.len(), 1);
+    assert_eq!(
+        filtered.rows[0].actor_display_name.as_deref(),
+        Some("Alice Admin")
+    );
 }
